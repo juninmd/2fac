@@ -1,0 +1,78 @@
+.lock-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #1a1a1a;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    color: #fff;
+}
+
+.lock-container {
+    background-color: #2d2d2d;
+    padding: 3rem;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    text-align: center;
+    width: 100%;
+    max-width: 400px;
+}
+
+.lock-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.lock-container h2 {
+    margin-bottom: 0.5rem;
+    font-size: 1.5rem;
+}
+
+.lock-container p {
+    color: #aaa;
+    margin-bottom: 2rem;
+}
+
+.lock-input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 1rem;
+    border: 1px solid #444;
+    border-radius: 6px;
+    background-color: #3d3d3d;
+    color: white;
+    font-size: 1rem;
+    box-sizing: border-box;
+}
+
+.lock-input:focus {
+    outline: none;
+    border-color: #e23e3e;
+}
+
+.lock-button {
+    width: 100%;
+    padding: 12px;
+    background-color: #e23e3e;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.lock-button:hover {
+    background-color: #c53030;
+}
+
+.lock-error {
+    color: #fc8181;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}

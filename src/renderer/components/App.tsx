@@ -2,15 +2,46 @@ import React, { useEffect, useState } from 'react';
 import { TwoFAItem } from '../types';
 import ItemList from './ItemList';
 import AddItemForm from './AddItemForm';
+import LockScreen from './LockScreen';
 import './App.css';
 
 const App: React.FC = () => {
     const [items, setItems] = useState<TwoFAItem[]>([]);
+    const [filteredItems, setFilteredItems] = useState<TwoFAItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isLocked, setIsLocked] = useState(true);
+    const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [showSidebar, setShowSidebar] = useState(false);
 
     useEffect(() => {
-        loadItems();
+        // We'll wait for the lock screen to unlock before loading items
     }, []);
+
+    useEffect(() => {
+        if (!isLocked) {
+            loadItems();
+        }
+    }, [isLocked]);
+
+    useEffect(() => {
+        if (searchQuery.trim() === '') {
+            setFilteredItems(items);
+        } else {
+            const lowerQuery = searchQuery.toLowerCase();
+            setFilteredItems(
+                items.filter(
+                    item =>
+                        item.account.toLowerCase().includes(lowerQuery) ||
+                        item.issuer.toLowerCase().includes(lowerQuery)
+                )
+            );
+        }
+    }, [searchQuery, items]);
+
+    const handleUnlock = () => {
+        setIsLocked(false);
+    };
 
     const loadItems = async () => {
         try {
@@ -38,6 +69,17 @@ const App: React.FC = () => {
             setItems(items.filter(item => item.id !== id));
         } catch (error) {
             console.error('Failed to remove item:', error);
+        }
+    };
+
+    const handleUpdateItem = async (id: string, updatedFields: Partial<TwoFAItem>) => {
+        try {
+            const updatedItem = await window.electron.update2FAItem(id, updatedFields);
+            if (updatedItem) {
+                setItems(items.map(item => (item.id === id ? updatedItem : item)));
+            }
+        } catch (error) {
+            console.error('Failed to update item:', error);
         }
     };
 
@@ -85,40 +127,101 @@ const App: React.FC = () => {
         }
     };
 
+    if (isLocked) {
+        return <LockScreen onUnlock={handleUnlock} />;
+    }
+
     return (
         <div className="app">
             <header className="app-header">
-                <h1>🔐 2FAC</h1>
-                <p>Gerenciador de Autenticação de Dois Fatores</p>
-            </header>
-
-            <div className="app-controls">
-                <button className="btn btn-primary" onClick={handleExport}>
-                    📥 Exportar Backup
-                </button>
-                <button className="btn btn-secondary" onClick={handleImport}>
-                    📤 Importar JSON
-                </button>
-                <button className="btn btn-success" onClick={handleImportAuthy}>
-                    📱 Importar Authy
-                </button>
-            </div>
-
-            <div className="app-content">
-                <div className="sidebar">
-                    <AddItemForm onAdd={handleAddItem} />
+                <div className="header-left">
+                    <h1>🔐 2FAC</h1>
                 </div>
 
-                <div className="main-area">
+                <div className="header-center">
+                    <input
+                        type="text"
+                        className="search-bar"
+                        placeholder="Buscar contas..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
+
+                <div className="header-right">
+                    <button
+                        className="btn-icon"
+                        onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                        title={viewMode === 'grid' ? 'Ver em Lista' : 'Ver em Grade'}
+                    >
+                        {viewMode === 'grid' ? '📋' : '📱'}
+                    </button>
+                    <button
+                        className="btn-icon"
+                        onClick={() => setShowSidebar(!showSidebar)}
+                        title="Adicionar Conta / Configurações"
+                    >
+                        ⚙️
+                    </button>
+                    <button
+                        className="btn-icon"
+                        onClick={() => setIsLocked(true)}
+                        title="Bloquear App"
+                    >
+                        🔒
+                    </button>
+                </div>
+            </header>
+
+            <div className="app-content">
+                {showSidebar && (
+                    <div className="sidebar">
+                        <div className="sidebar-section">
+                            <h3>Adicionar Conta</h3>
+                            <AddItemForm onAdd={(item) => {
+                                handleAddItem(item);
+                                setShowSidebar(false);
+                            }} />
+                        </div>
+
+                        <div className="sidebar-section">
+                            <h3>Gerenciamento</h3>
+                            <div className="sidebar-buttons">
+                                <button className="btn btn-primary full-width" onClick={handleExport}>
+                                    📥 Exportar Backup
+                                </button>
+                                <button className="btn btn-secondary full-width" onClick={handleImport}>
+                                    📤 Importar JSON
+                                </button>
+                                <button className="btn btn-success full-width" onClick={handleImportAuthy}>
+                                    📱 Importar Authy
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <div className={`main-area ${viewMode}-view`}>
                     {loading ? (
                         <div className="loading">Carregando...</div>
                     ) : items.length === 0 ? (
                         <div className="empty-state">
                             <p>Nenhum item 2FA adicionado ainda</p>
-                            <p className="hint">Adicione um novo item usando o formulário ao lado</p>
+                            <button className="btn btn-primary" onClick={() => setShowSidebar(true)}>
+                                Adicionar primeira conta
+                            </button>
+                        </div>
+                    ) : filteredItems.length === 0 ? (
+                        <div className="empty-state">
+                            <p>Nenhuma conta encontrada para "{searchQuery}"</p>
                         </div>
                     ) : (
-                        <ItemList items={items} onRemove={handleRemoveItem} />
+                        <ItemList
+                            items={filteredItems}
+                            onRemove={handleRemoveItem}
+                            viewMode={viewMode}
+                            onUpdate={handleUpdateItem}
+                        />
                     )}
                 </div>
             </div>

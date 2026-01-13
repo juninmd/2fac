@@ -5,31 +5,29 @@ import Item from './Item';
 interface ItemListProps {
     items: TwoFAItem[];
     onRemove: (id: string) => void;
+    onUpdate: (id: string, item: Partial<TwoFAItem>) => void;
+    viewMode: 'list' | 'grid';
 }
 
-const ItemList: React.FC<ItemListProps> = ({ items, onRemove }) => {
-    // Group items by issuer
-    const groupedItems = items.reduce((acc, item) => {
-        if (!acc[item.issuer]) {
-            acc[item.issuer] = [];
+const ItemList: React.FC<ItemListProps> = ({ items, onRemove, onUpdate, viewMode }) => {
+    // Sort items by issuer then account
+    const sortedItems = [...items].sort((a, b) => {
+        if (a.issuer !== b.issuer) {
+            return a.issuer.localeCompare(b.issuer);
         }
-        acc[item.issuer].push(item);
-        return acc;
-    }, {} as Record<string, TwoFAItem[]>);
-
-    const issuers = Object.keys(groupedItems).sort();
+        return a.account.localeCompare(b.account);
+    });
 
     return (
-        <div className="item-list">
-            {issuers.map(issuer => (
-                <div key={issuer} className="issuer-group">
-                    <h2 className="group-title">{issuer}</h2>
-                    <div className="items-grid">
-                        {groupedItems[issuer].map(item => (
-                            <Item key={item.id} item={item} onRemove={onRemove} />
-                        ))}
-                    </div>
-                </div>
+        <div className={`item-list ${viewMode}-mode`}>
+            {sortedItems.map(item => (
+                <Item
+                    key={item.id}
+                    item={item}
+                    onRemove={onRemove}
+                    onUpdate={onUpdate}
+                    viewMode={viewMode}
+                />
             ))}
         </div>
     );
