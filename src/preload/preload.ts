@@ -8,6 +8,9 @@ contextBridge.exposeInMainWorld('electron', {
     export2FA: () => ipcRenderer.invoke('export-2fa'),
     import2FA: () => ipcRenderer.invoke('import-2fa'),
     importAuthy: () => ipcRenderer.invoke('import-authy'),
+    setMasterPassword: (password: string) => ipcRenderer.invoke('set-master-password', password),
+    checkMasterPassword: (password: string) => ipcRenderer.invoke('check-master-password', password),
+    hasMasterPassword: () => ipcRenderer.invoke('has-master-password'),
 });
 
 export interface ElectronAPI {
@@ -18,6 +21,9 @@ export interface ElectronAPI {
     export2FA: () => Promise<{ success: boolean; path?: string }>;
     import2FA: () => Promise<{ success: boolean; count?: number }>;
     importAuthy: () => Promise<{ success: boolean; count?: number; error?: string }>;
+    setMasterPassword: (password: string) => Promise<boolean>;
+    checkMasterPassword: (password: string) => Promise<boolean>;
+    hasMasterPassword: () => Promise<boolean>;
 }
 
 declare global {

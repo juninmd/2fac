@@ -1,6 +1,7 @@
 import { app, BrowserWindow, Menu, ipcMain, dialog } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as crypto from 'crypto';
 import Store from 'electron-store';
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -95,6 +96,22 @@ ipcMain.handle('export-2fa', async () => {
         return { success: true, path: result.filePath };
     }
     return { success: false };
+});
+
+ipcMain.handle('set-master-password', (_event, password) => {
+    const hash = crypto.createHash('sha256').update(password).digest('hex');
+    store.set('masterPassword', hash);
+    return true;
+});
+
+ipcMain.handle('check-master-password', (_event, password) => {
+    const savedHash = store.get('masterPassword');
+    const hash = crypto.createHash('sha256').update(password).digest('hex');
+    return savedHash === hash;
+});
+
+ipcMain.handle('has-master-password', () => {
+    return store.has('masterPassword');
 });
 
 ipcMain.handle('import-2fa', async () => {

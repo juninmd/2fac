@@ -28,6 +28,8 @@ module.exports = {
             stream: require.resolve('stream-browserify'),
             util: require.resolve('util/'),
             url: require.resolve('url/'),
+            buffer: require.resolve('buffer/'),
+            vm: require.resolve('vm-browserify'),
         },
     },
     devServer: {
@@ -38,6 +40,10 @@ module.exports = {
     plugins: [
         new HtmlWebpackPlugin({
             template: './public/index.html',
+        }),
+        new (require('webpack').ProvidePlugin)({
+            Buffer: ['buffer', 'Buffer'],
+            process: 'process/browser',
         }),
     ],
     target: 'web',
