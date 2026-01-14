@@ -1,8 +1,9 @@
-import { app, BrowserWindow, Menu, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, Menu, ipcMain, dialog, desktopCapturer } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as crypto from 'crypto';
 import Store from 'electron-store';
+import jsQR from 'jsqr';
 
 const isDev = process.env.NODE_ENV === 'development';
 const store = new Store();
@@ -96,6 +97,45 @@ ipcMain.handle('export-2fa', async () => {
         return { success: true, path: result.filePath };
     }
     return { success: false };
+});
+
+ipcMain.handle('scan-screen-qr', async () => {
+    try {
+        // Minimize window to reveal screen content
+        if (mainWindow) {
+            mainWindow.minimize();
+        }
+
+        // Wait for minimize animation
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        const sources = await desktopCapturer.getSources({
+            types: ['screen'],
+            thumbnailSize: { width: 3840, height: 2160 }
+        });
+
+        for (const source of sources) {
+            const image = source.thumbnail;
+            const size = image.getSize();
+            const bitmap = image.toBitmap();
+
+            // jsQR expects Uint8ClampedArray (RGBA)
+            const code = jsQR(new Uint8ClampedArray(bitmap), size.width, size.height);
+
+            if (code) {
+                if (mainWindow) mainWindow.restore();
+                return { success: true, data: code.data };
+            }
+        }
+
+        if (mainWindow) mainWindow.restore();
+        return { success: false, error: 'QR Code not found on screen' };
+
+    } catch (error: any) {
+        console.error('QR Scan error:', error);
+        if (mainWindow) mainWindow.restore();
+        return { success: false, error: error.message };
+    }
 });
 
 ipcMain.handle('set-master-password', (_event, password) => {

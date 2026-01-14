@@ -19,6 +19,7 @@ export interface ElectronAPI {
     export2FA: () => Promise<{ success: boolean; path?: string }>;
     import2FA: () => Promise<{ success: boolean; count?: number }>;
     importAuthy: () => Promise<{ success: boolean; count?: number; error?: string }>;
+    scanScreenQR: () => Promise<{ success: boolean; data?: string; error?: string }>;
     setMasterPassword: (password: string) => Promise<boolean>;
     checkMasterPassword: (password: string) => Promise<boolean>;
     hasMasterPassword: () => Promise<boolean>;

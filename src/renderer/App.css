@@ -303,43 +303,32 @@ body {
   margin: 0 2rem;
 }
 
-/* Timer */
-.token-timer {
-  width: 100%;
-  height: 4px;
-  background-color: rgba(255,255,255,0.1);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.grid-item .token-timer {
-  margin-top: auto;
-}
-
-.list-item .token-timer {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: transparent;
-  position: relative;
+/* Circular Timer */
+.circular-timer {
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 1rem;
-}
-/* Simplificação para list view timer bar, mantendo estilo de barra por enquanto */
-.list-item .token-timer {
-    width: 100px;
-    height: 6px;
-    border-radius: 3px;
-    margin-right: 1rem;
-    background-color: rgba(255,255,255,0.1);
 }
 
-.timer-bar {
-  height: 100%;
-  background-color: var(--accent-blue);
-  transition: width 1s linear;
+.grid-item .token-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 0.5rem;
+}
+
+.list-item .token-display {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-right: 20px;
+}
+
+.list-item .token {
+    margin: 0 !important;
 }
 
 /* Actions */

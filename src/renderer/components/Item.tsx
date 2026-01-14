@@ -76,7 +76,15 @@ const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, viewMode }) 
         setIsEditing(false);
     };
 
-    const progressPercentage = (timeLeft / (item.period || 30)) * 100;
+    const period = item.period || 30;
+    const progressPercentage = (timeLeft / period) * 100;
+
+    // Circular timer calculations
+    const radius = 12;
+    const circumference = 2 * Math.PI * radius;
+    const strokeDashoffset = circumference - (timeLeft / period) * circumference;
+    const isLowTime = timeLeft <= 5;
+    const timerColor = isLowTime ? '#f44336' : '#2196f3';
 
     // Generate color based on issuer
     const getIssuerColor = (issuer: string) => {
@@ -131,11 +139,31 @@ const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, viewMode }) 
 
                 <div className="token-display">
                     <span className="token">{token}</span>
-                </div>
-
-                <div className="token-timer">
-                    <div className="timer-track">
-                        <div className="timer-bar" style={{ width: `${progressPercentage}%` }}></div>
+                    <div className="circular-timer">
+                        <svg width="30" height="30" viewBox="0 0 30 30">
+                            <circle
+                                stroke="rgba(255,255,255,0.1)"
+                                strokeWidth="3"
+                                fill="transparent"
+                                r={radius}
+                                cx="15"
+                                cy="15"
+                            />
+                            <circle
+                                stroke={timerColor}
+                                strokeWidth="3"
+                                fill="transparent"
+                                r={radius}
+                                cx="15"
+                                cy="15"
+                                style={{
+                                    strokeDasharray: circumference,
+                                    strokeDashoffset: strokeDashoffset,
+                                    transition: 'stroke-dashoffset 1s linear, stroke 0.3s ease'
+                                }}
+                                transform="rotate(-90 15 15)"
+                            />
+                        </svg>
                     </div>
                 </div>
             </div>
