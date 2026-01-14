@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import * as OTPAuth from 'otpauth';
 import { TwoFAItem } from '../types';
 
 interface AddItemFormProps {
@@ -6,6 +7,7 @@ interface AddItemFormProps {
 }
 
 const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd }) => {
+    const [isScanning, setIsScanning] = useState(false);
     const [formData, setFormData] = useState({
         account: '',
         issuer: '',
@@ -86,9 +88,62 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd }) => {
         }
     };
 
+    const handleScanQR = async () => {
+        setIsScanning(true);
+        try {
+            const result = await window.electron.scanScreenQR();
+            if (result.success && result.data) {
+                try {
+                    const parsed = OTPAuth.URI.parse(result.data);
+
+                    let secret = '';
+                    if (parsed.secret) {
+                        secret = parsed.secret.base32;
+                    }
+
+                    if (parsed && secret) {
+                         setFormData(prev => ({
+                             ...prev,
+                             account: parsed.label || prev.account,
+                             issuer: parsed.issuer || prev.issuer,
+                             secret: secret,
+                             algorithm: (parsed.algorithm || 'SHA1') as any,
+                             digits: (parsed.digits || 6).toString(),
+                             period: (parsed instanceof OTPAuth.TOTP ? parsed.period : 30).toString(),
+                             encoding: 'base32',
+                             type: 'totp'
+                         }));
+                         setErrors({});
+                    } else {
+                        alert('QR Code não contém dados válidos de 2FA.');
+                    }
+                } catch (e) {
+                    alert('QR Code inválido ou não suportado.');
+                }
+            } else {
+                alert(result.error || 'QR Code não encontrado na tela. Certifique-se que o código está visível.');
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Erro ao escanear.');
+        } finally {
+            setIsScanning(false);
+        }
+    };
+
     return (
         <form className="add-item-form" onSubmit={handleSubmit}>
             <h2>Adicionar Nova Conta 2FA</h2>
+
+            <button
+                type="button"
+                className="btn btn-secondary full-width"
+                onClick={handleScanQR}
+                disabled={isScanning}
+                style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+            >
+                {isScanning ? 'Procurando...' : '📷 Escanear QR da Tela'}
+            </button>
 
             <div className="form-group">
                 <label htmlFor="account">Nome da Conta *</label>
