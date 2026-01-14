@@ -80,42 +80,33 @@ const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, viewMode }) 
     const progressPercentage = (timeLeft / period) * 100;
 
     // Circular timer calculations
-    const radius = 12;
+    const radius = 10;
     const circumference = 2 * Math.PI * radius;
     const strokeDashoffset = circumference - (timeLeft / period) * circumference;
     const isLowTime = timeLeft <= 5;
-    const timerColor = isLowTime ? '#f44336' : '#2196f3';
-
-    // Generate color based on issuer
-    const getIssuerColor = (issuer: string) => {
-        const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#ff9800', '#ff5722', '#795548', '#607d8b'];
-        let hash = 0;
-        for (let i = 0; i < issuer.length; i++) {
-            hash = issuer.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        return colors[Math.abs(hash) % colors.length];
-    };
-
-    const issuerColor = getIssuerColor(item.issuer);
-    const initial = item.issuer.charAt(0).toUpperCase();
+    const timerColor = isLowTime ? '#f44336' : '#d32f2f'; // Match primary color
 
     if (isEditing) {
         return (
             <div className={`item ${viewMode}-item editing`}>
                 <form onSubmit={handleEditSubmit} className="edit-form">
-                    <input
-                        type="text"
-                        value={editForm.issuer}
-                        onChange={(e) => setEditForm({...editForm, issuer: e.target.value})}
-                        placeholder="Emissor"
-                        autoFocus
-                    />
-                    <input
-                        type="text"
-                        value={editForm.account}
-                        onChange={(e) => setEditForm({...editForm, account: e.target.value})}
-                        placeholder="Conta"
-                    />
+                    <div className="form-group">
+                        <input
+                            type="text"
+                            value={editForm.issuer}
+                            onChange={(e) => setEditForm({...editForm, issuer: e.target.value})}
+                            placeholder="Emissor"
+                            autoFocus
+                        />
+                    </div>
+                    <div className="form-group">
+                        <input
+                            type="text"
+                            value={editForm.account}
+                            onChange={(e) => setEditForm({...editForm, account: e.target.value})}
+                            placeholder="Conta"
+                        />
+                    </div>
                     <div className="edit-actions">
                         <button type="submit" className="btn btn-primary btn-sm">Salvar</button>
                         <button type="button" className="btn btn-secondary btn-sm" onClick={() => setIsEditing(false)}>Cancelar</button>
@@ -126,51 +117,56 @@ const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, viewMode }) 
     }
 
     return (
-        <div className={`item ${viewMode}-item`} onClick={copyToClipboard} style={{'--issuer-color': issuerColor} as React.CSSProperties}>
-            <div className="item-icon-container">
-                <div className="item-icon">{initial}</div>
-            </div>
-
-            <div className="item-content">
-                <div className="item-header">
+        <div className={`item ${viewMode}-item`} onClick={copyToClipboard}>
+            {viewMode === 'list' && (
+                 <div className="item-header">
                     <span className="item-issuer">{item.issuer}</span>
                     <h3 className="item-account" title={item.account}>{item.account}</h3>
                 </div>
+            )}
 
-                <div className="token-display">
-                    <span className="token">{token}</span>
-                    <div className="circular-timer">
-                        <svg width="30" height="30" viewBox="0 0 30 30">
-                            <circle
-                                stroke="rgba(255,255,255,0.1)"
-                                strokeWidth="3"
-                                fill="transparent"
-                                r={radius}
-                                cx="15"
-                                cy="15"
-                            />
-                            <circle
-                                stroke={timerColor}
-                                strokeWidth="3"
-                                fill="transparent"
-                                r={radius}
-                                cx="15"
-                                cy="15"
-                                style={{
-                                    strokeDasharray: circumference,
-                                    strokeDashoffset: strokeDashoffset,
-                                    transition: 'stroke-dashoffset 1s linear, stroke 0.3s ease'
-                                }}
-                                transform="rotate(-90 15 15)"
-                            />
-                        </svg>
+            {viewMode !== 'list' && (
+                <div className="item-header">
+                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                        <span className="item-issuer">{item.issuer}</span>
                     </div>
+                    <h3 className="item-account" title={item.account}>{item.account}</h3>
+                </div>
+            )}
+
+            <div className="token-display">
+                <span className="token">{token}</span>
+                <div className="circular-timer">
+                    <svg width="24" height="24" viewBox="0 0 24 24">
+                        <circle
+                            stroke="rgba(255,255,255,0.1)"
+                            strokeWidth="2"
+                            fill="transparent"
+                            r={radius}
+                            cx="12"
+                            cy="12"
+                        />
+                        <circle
+                            stroke={timerColor}
+                            strokeWidth="2"
+                            fill="transparent"
+                            r={radius}
+                            cx="12"
+                            cy="12"
+                            style={{
+                                strokeDasharray: circumference,
+                                strokeDashoffset: strokeDashoffset,
+                                transition: 'stroke-dashoffset 1s linear, stroke 0.3s ease'
+                            }}
+                            transform="rotate(-90 12 12)"
+                        />
+                    </svg>
                 </div>
             </div>
 
             <div className="item-actions">
                 <button className="btn-icon-small" onClick={(e) => { e.stopPropagation(); setIsEditing(true); }} title="Editar">
-                    ✏️
+                    ✎
                 </button>
                 <button className="btn-icon-small delete" onClick={handleRemove} title="Remover">
                     ✕

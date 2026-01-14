@@ -135,7 +135,9 @@ const App: React.FC = () => {
         <div className="app">
             <header className="app-header">
                 <div className="header-left">
-                    <h1>🔐 2FAC</h1>
+                    <h1>
+                        <span style={{ fontSize: '24px' }}>🔐</span> 2FAC
+                    </h1>
                 </div>
 
                 <div className="header-center">
@@ -154,14 +156,14 @@ const App: React.FC = () => {
                         onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
                         title={viewMode === 'grid' ? 'Ver em Lista' : 'Ver em Grade'}
                     >
-                        {viewMode === 'grid' ? '📋' : '📱'}
+                        {viewMode === 'grid' ? '☰' : '▦'}
                     </button>
                     <button
                         className="btn-icon"
                         onClick={() => setShowSidebar(!showSidebar)}
                         title="Adicionar Conta / Configurações"
                     >
-                        ⚙️
+                        ⚙
                     </button>
                     <button
                         className="btn-icon"
@@ -187,13 +189,13 @@ const App: React.FC = () => {
                         <div className="sidebar-section">
                             <h3>Gerenciamento</h3>
                             <div className="sidebar-buttons">
-                                <button className="btn btn-primary full-width" onClick={handleExport}>
+                                <button className="btn btn-secondary full-width" onClick={handleExport}>
                                     📥 Exportar Backup
                                 </button>
                                 <button className="btn btn-secondary full-width" onClick={handleImport}>
                                     📤 Importar JSON
                                 </button>
-                                <button className="btn btn-success full-width" onClick={handleImportAuthy}>
+                                <button className="btn btn-secondary full-width" onClick={handleImportAuthy}>
                                     📱 Importar Authy
                                 </button>
                             </div>
@@ -208,7 +210,7 @@ const App: React.FC = () => {
                         <div className="empty-state">
                             <p>Nenhum item 2FA adicionado ainda</p>
                             <button className="btn btn-primary" onClick={() => setShowSidebar(true)}>
-                                Adicionar primeira conta
+                                + Adicionar primeira conta
                             </button>
                         </div>
                     ) : filteredItems.length === 0 ? (

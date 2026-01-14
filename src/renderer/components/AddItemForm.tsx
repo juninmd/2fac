@@ -133,17 +133,25 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd }) => {
 
     return (
         <form className="add-item-form" onSubmit={handleSubmit}>
-            <h2>Adicionar Nova Conta 2FA</h2>
-
             <button
                 type="button"
-                className="btn btn-secondary full-width"
+                className="btn btn-primary full-width"
                 onClick={handleScanQR}
                 disabled={isScanning}
-                style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                style={{ marginBottom: '24px', height: '48px', fontSize: '15px' }}
             >
-                {isScanning ? 'Procurando...' : '📷 Escanear QR da Tela'}
+                {isScanning ? 'Procurando QR Code...' : '📷 Escanear QR da Tela'}
             </button>
+
+            <div className="form-separator" style={{
+                textAlign: 'center',
+                borderBottom: '1px solid var(--border-color)',
+                lineHeight: '0.1em',
+                margin: '10px 0 20px',
+                color: 'var(--text-secondary)'
+            }}>
+                <span style={{ background: 'var(--bg-surface)', padding: '0 10px' }}>OU MANUALMENTE</span>
+            </div>
 
             <div className="form-group">
                 <label htmlFor="account">Nome da Conta *</label>
@@ -167,7 +175,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd }) => {
                     name="issuer"
                     value={formData.issuer}
                     onChange={handleChange}
-                    placeholder="ex: Google, GitHub, Microsoft"
+                    placeholder="ex: Google, GitHub"
                     className={errors.issuer ? 'error' : ''}
                 />
                 {errors.issuer && <span className="error-message">{errors.issuer}</span>}
