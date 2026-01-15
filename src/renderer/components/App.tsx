@@ -3,6 +3,7 @@ import { TwoFAItem } from '../types';
 import ItemList from './ItemList';
 import AddItemForm from './AddItemForm';
 import LockScreen from './LockScreen';
+import Settings from './Settings';
 import './App.css';
 
 const App: React.FC = () => {
@@ -13,10 +14,45 @@ const App: React.FC = () => {
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
     const [searchQuery, setSearchQuery] = useState('');
     const [showSidebar, setShowSidebar] = useState(false);
+    const [showSettings, setShowSettings] = useState(false);
+    const [settings, setSettings] = useState<any>(null);
 
     useEffect(() => {
-        // We'll wait for the lock screen to unlock before loading items
-    }, []);
+        loadSettings();
+    }, [showSettings]); // Reload settings when settings view closes
+
+    const loadSettings = async () => {
+        const loaded = await window.electron.getSettings();
+        setSettings(loaded);
+    };
+
+    useEffect(() => {
+        let timer: NodeJS.Timeout;
+
+        const resetTimer = () => {
+            if (timer) clearTimeout(timer);
+            if (settings?.autoLock && !isLocked) {
+                const timeoutMs = (settings.autoLockTimeout || 5) * 60 * 1000;
+                timer = setTimeout(() => {
+                    setIsLocked(true);
+                }, timeoutMs);
+            }
+        };
+
+        if (!isLocked && settings?.autoLock) {
+            resetTimer();
+            window.addEventListener('mousemove', resetTimer);
+            window.addEventListener('keydown', resetTimer);
+            window.addEventListener('click', resetTimer);
+        }
+
+        return () => {
+            if (timer) clearTimeout(timer);
+            window.removeEventListener('mousemove', resetTimer);
+            window.removeEventListener('keydown', resetTimer);
+            window.removeEventListener('click', resetTimer);
+        };
+    }, [isLocked, settings]);
 
     useEffect(() => {
         if (!isLocked) {
@@ -80,6 +116,27 @@ const App: React.FC = () => {
             }
         } catch (error) {
             console.error('Failed to update item:', error);
+        }
+    };
+
+    const handleMoveItem = async (id: string, direction: 'up' | 'down') => {
+        const index = items.findIndex(item => item.id === id);
+        if (index === -1) return;
+
+        const newItems = [...items];
+        if (direction === 'up') {
+            if (index === 0) return;
+            [newItems[index - 1], newItems[index]] = [newItems[index], newItems[index - 1]];
+        } else {
+            if (index === items.length - 1) return;
+            [newItems[index + 1], newItems[index]] = [newItems[index], newItems[index + 1]];
+        }
+
+        setItems(newItems);
+        try {
+            await window.electron.set2FAItems(newItems);
+        } catch (error) {
+            console.error('Failed to update order', error);
         }
     };
 
@@ -189,6 +246,9 @@ const App: React.FC = () => {
                         <div className="sidebar-section">
                             <h3>Gerenciamento</h3>
                             <div className="sidebar-buttons">
+                                <button className="btn btn-secondary full-width" onClick={() => { setShowSettings(true); setShowSidebar(false); }}>
+                                    ⚙ Configurações
+                                </button>
                                 <button className="btn btn-secondary full-width" onClick={handleExport}>
                                     📥 Exportar Backup
                                 </button>
@@ -204,7 +264,9 @@ const App: React.FC = () => {
                 )}
 
                 <div className={`main-area ${viewMode}-view`}>
-                    {loading ? (
+                    {showSettings ? (
+                        <Settings onClose={() => setShowSettings(false)} />
+                    ) : loading ? (
                         <div className="loading">Carregando...</div>
                     ) : items.length === 0 ? (
                         <div className="empty-state">
@@ -223,6 +285,7 @@ const App: React.FC = () => {
                             onRemove={handleRemoveItem}
                             viewMode={viewMode}
                             onUpdate={handleUpdateItem}
+                            onMove={handleMoveItem}
                         />
                     )}
                 </div>

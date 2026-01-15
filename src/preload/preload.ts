@@ -12,24 +12,8 @@ contextBridge.exposeInMainWorld('electron', {
     setMasterPassword: (password: string) => ipcRenderer.invoke('set-master-password', password),
     checkMasterPassword: (password: string) => ipcRenderer.invoke('check-master-password', password),
     hasMasterPassword: () => ipcRenderer.invoke('has-master-password'),
+    set2FAItems: (items: any[]) => ipcRenderer.invoke('set-2fa-items', items),
+    getSettings: () => ipcRenderer.invoke('get-settings'),
+    setSettings: (settings: any) => ipcRenderer.invoke('set-settings', settings),
 });
 
-export interface ElectronAPI {
-    get2FAItems: () => Promise<any[]>;
-    add2FAItem: (item: any) => Promise<any>;
-    remove2FAItem: (id: string) => Promise<boolean>;
-    update2FAItem: (id: string, item: any) => Promise<any>;
-    export2FA: () => Promise<{ success: boolean; path?: string }>;
-    import2FA: () => Promise<{ success: boolean; count?: number }>;
-    importAuthy: () => Promise<{ success: boolean; count?: number; error?: string }>;
-    scanScreenQR: () => Promise<{ success: boolean; data?: string; error?: string }>;
-    setMasterPassword: (password: string) => Promise<boolean>;
-    checkMasterPassword: (password: string) => Promise<boolean>;
-    hasMasterPassword: () => Promise<boolean>;
-}
-
-declare global {
-    interface Window {
-        electron: ElectronAPI;
-    }
-}

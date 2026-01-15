@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, ipcMain, dialog, desktopCapturer } from 'electron';
+import { app, BrowserWindow, Menu, ipcMain, dialog, desktopCapturer, Tray, nativeImage } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as crypto from 'crypto';
@@ -9,6 +9,53 @@ const isDev = process.env.NODE_ENV === 'development';
 const store = new Store();
 
 let mainWindow: BrowserWindow | null;
+let tray: Tray | null = null;
+let isQuitting = false;
+
+const createTray = () => {
+    if (tray) return;
+
+    // Use a default icon or placeholder. In a real app, ensure 'icon.png' exists in resources.
+    // For now, we try to load an icon if it exists, otherwise it might fail or show empty.
+    // We'll generate a simple 1x1 png to avoid errors if file missing, or try standard path.
+    const iconPath = path.join(__dirname, '../../public/icon.png'); // Hypothetical path
+    let icon = nativeImage.createEmpty();
+    if (fs.existsSync(iconPath)) {
+        icon = nativeImage.createFromPath(iconPath);
+    }
+
+    tray = new Tray(icon);
+    const contextMenu = Menu.buildFromTemplate([
+        {
+            label: 'Abrir',
+            click: () => {
+                if (mainWindow) {
+                    mainWindow.show();
+                    mainWindow.focus();
+                } else {
+                    createWindow();
+                }
+            }
+        },
+        { type: 'separator' },
+        {
+            label: 'Sair',
+            click: () => {
+                isQuitting = true;
+                app.quit();
+            }
+        }
+    ]);
+    tray.setToolTip('2FAC');
+    tray.setContextMenu(contextMenu);
+
+    tray.on('double-click', () => {
+        if (mainWindow) {
+            mainWindow.show();
+            mainWindow.focus();
+        }
+    });
+};
 
 const createWindow = () => {
     mainWindow = new BrowserWindow({
@@ -34,17 +81,43 @@ const createWindow = () => {
         mainWindow.webContents.openDevTools();
     }
 
+    mainWindow.on('close', (event) => {
+        const settings: any = store.get('appSettings') || {};
+        if (settings.minimizeToTray && !isQuitting) {
+            event.preventDefault();
+            mainWindow?.hide();
+            return false;
+        }
+        return true;
+    });
+
     mainWindow.on('closed', () => {
         mainWindow = null;
     });
 };
 
-app.on('ready', createWindow);
+app.on('ready', () => {
+    createWindow();
+    createTray();
+
+    // Apply startup settings
+    const settings: any = store.get('appSettings') || {};
+    app.setLoginItemSettings({
+        openAtLogin: !!settings.runOnStartup,
+        openAsHidden: !!settings.minimizeToTray
+    });
+});
+
+app.on('before-quit', () => {
+    isQuitting = true;
+});
 
 app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') {
+    const settings: any = store.get('appSettings') || {};
+    if (process.platform !== 'darwin' && !settings.minimizeToTray) {
         app.quit();
     }
+    // If minimizeToTray is true, we stay running in background (tray)
 });
 
 app.on('activate', () => {
@@ -83,6 +156,11 @@ ipcMain.handle('update-2fa-item', (_event, id, updatedItem) => {
         return items[index];
     }
     return null;
+});
+
+ipcMain.handle('set-2fa-items', (_event, items) => {
+    store.set('twoFAItems', items);
+    return true;
 });
 
 ipcMain.handle('export-2fa', async () => {
@@ -152,6 +230,24 @@ ipcMain.handle('check-master-password', (_event, password) => {
 
 ipcMain.handle('has-master-password', () => {
     return store.has('masterPassword');
+});
+
+ipcMain.handle('get-settings', () => {
+    return store.get('appSettings', {
+        minimizeToTray: false,
+        runOnStartup: false,
+        autoLock: true,
+        autoLockTimeout: 5 // minutes
+    });
+});
+
+ipcMain.handle('set-settings', (_event, settings) => {
+    store.set('appSettings', settings);
+    app.setLoginItemSettings({
+        openAtLogin: !!settings.runOnStartup,
+        openAsHidden: !!settings.minimizeToTray
+    });
+    return true;
 });
 
 ipcMain.handle('import-2fa', async () => {
