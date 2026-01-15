@@ -23,10 +23,20 @@ export interface ElectronAPI {
     setMasterPassword: (password: string) => Promise<boolean>;
     checkMasterPassword: (password: string) => Promise<boolean>;
     hasMasterPassword: () => Promise<boolean>;
+    set2FAItems: (items: TwoFAItem[]) => Promise<boolean>;
+    getSettings: () => Promise<AppSettings>;
+    setSettings: (settings: AppSettings) => Promise<boolean>;
 }
 
-// declare global {
-//     interface Window {
-//         electron: ElectronAPI;
-//     }
-// }
+export interface AppSettings {
+    minimizeToTray: boolean;
+    runOnStartup: boolean;
+    autoLock: boolean;
+    autoLockTimeout: number;
+}
+
+declare global {
+    interface Window {
+        electron: ElectronAPI;
+    }
+}

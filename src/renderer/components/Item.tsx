@@ -6,10 +6,13 @@ interface TwoFAItemProps {
     item: TwoFAItem;
     onRemove: (id: string) => void;
     onUpdate: (id: string, item: Partial<TwoFAItem>) => void;
+    onMove: (id: string, direction: 'up' | 'down') => void;
     viewMode: 'list' | 'grid';
+    isFirst: boolean;
+    isLast: boolean;
 }
 
-const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, viewMode }) => {
+const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, onMove, viewMode, isFirst, isLast }) => {
     const [token, setToken] = useState<string>('');
     const [timeLeft, setTimeLeft] = useState<number>(30);
     const [copied, setCopied] = useState(false);
@@ -165,6 +168,16 @@ const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, viewMode }) 
             </div>
 
             <div className="item-actions">
+                {!isFirst && (
+                    <button className="btn-icon-small" onClick={(e) => { e.stopPropagation(); onMove(item.id, 'up'); }} title="Mover para Cima">
+                        ↑
+                    </button>
+                )}
+                {!isLast && (
+                    <button className="btn-icon-small" onClick={(e) => { e.stopPropagation(); onMove(item.id, 'down'); }} title="Mover para Baixo">
+                        ↓
+                    </button>
+                )}
                 <button className="btn-icon-small" onClick={(e) => { e.stopPropagation(); setIsEditing(true); }} title="Editar">
                     ✎
                 </button>
