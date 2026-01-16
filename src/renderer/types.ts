@@ -9,6 +9,7 @@ export interface TwoFAItem {
     period?: number;
     encoding?: string;
     type?: string;
+    color?: string;
 }
 
 export interface ElectronAPI {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TwoFAItem } from '../types';
 import * as OTPAuth from 'otpauth';
+import { COLORS } from '../constants';
 
 interface TwoFAItemProps {
     item: TwoFAItem;
@@ -17,7 +18,7 @@ const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, onMove, view
     const [timeLeft, setTimeLeft] = useState<number>(30);
     const [copied, setCopied] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [editForm, setEditForm] = useState({ account: item.account, issuer: item.issuer });
+    const [editForm, setEditForm] = useState({ account: item.account, issuer: item.issuer, color: item.color || '#e23e3e' });
 
     useEffect(() => {
         generateToken();
@@ -89,9 +90,15 @@ const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, onMove, view
     const isLowTime = timeLeft <= 5;
     const timerColor = isLowTime ? '#f44336' : '#d32f2f'; // Match primary color
 
+    const itemColor = item.color || '#e23e3e';
+    const itemStyle = { '--issuer-color': itemColor } as React.CSSProperties;
+
+    // First letter of issuer for icon
+    const iconLetter = item.issuer ? item.issuer.charAt(0).toUpperCase() : '?';
+
     if (isEditing) {
         return (
-            <div className={`item ${viewMode}-item editing`}>
+            <div className={`item ${viewMode}-item editing`} style={itemStyle}>
                 <form onSubmit={handleEditSubmit} className="edit-form">
                     <div className="form-group">
                         <input
@@ -110,6 +117,27 @@ const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, onMove, view
                             placeholder="Conta"
                         />
                     </div>
+
+                    <div className="form-group">
+                        <label style={{fontSize: '0.8rem', color: '#aaa', marginBottom: '5px'}}>Cor</label>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: '3px' }}>
+                            {COLORS.map(color => (
+                                <div
+                                    key={color}
+                                    onClick={() => setEditForm(prev => ({ ...prev, color }))}
+                                    style={{
+                                        backgroundColor: color,
+                                        width: '100%',
+                                        paddingTop: '100%',
+                                        borderRadius: '2px',
+                                        cursor: 'pointer',
+                                        border: editForm.color === color ? '2px solid white' : '1px solid transparent',
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
                     <div className="edit-actions">
                         <button type="submit" className="btn btn-primary btn-sm">Salvar</button>
                         <button type="button" className="btn btn-secondary btn-sm" onClick={() => setIsEditing(false)}>Cancelar</button>
@@ -120,21 +148,33 @@ const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, onMove, view
     }
 
     return (
-        <div className={`item ${viewMode}-item`} onClick={copyToClipboard}>
+        <div className={`item ${viewMode}-item`} onClick={copyToClipboard} style={itemStyle}>
             {viewMode === 'list' && (
-                 <div className="item-header">
-                    <span className="item-issuer">{item.issuer}</span>
-                    <h3 className="item-account" title={item.account}>{item.account}</h3>
-                </div>
+                <>
+                 <div className="item-icon-container">
+                    {iconLetter}
+                 </div>
+                 <div className="item-content">
+                    <div className="item-header">
+                        <span className="item-issuer">{item.issuer}</span>
+                        <h3 className="item-account" title={item.account}>{item.account}</h3>
+                    </div>
+                 </div>
+                 </>
             )}
 
             {viewMode !== 'list' && (
+                <>
+                <div className="item-icon-container">
+                    {iconLetter}
+                </div>
                 <div className="item-header">
                     <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
                         <span className="item-issuer">{item.issuer}</span>
                     </div>
                     <h3 className="item-account" title={item.account}>{item.account}</h3>
                 </div>
+                </>
             )}
 
             <div className="token-display">

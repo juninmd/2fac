@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import * as OTPAuth from 'otpauth';
 import { TwoFAItem } from '../types';
+import { COLORS } from '../constants';
 
 interface AddItemFormProps {
     onAdd: (item: Omit<TwoFAItem, 'id'>) => void;
@@ -18,6 +19,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd }) => {
         period: '30',
         encoding: 'base32',
         type: 'totp',
+        color: '#e23e3e',
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -56,6 +58,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd }) => {
             period: parseInt(formData.period),
             encoding: formData.encoding as any,
             type: formData.type as any,
+            color: formData.color,
         });
 
         // Reset form
@@ -69,6 +72,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd }) => {
             period: '30',
             encoding: 'base32',
             type: 'totp',
+            color: '#e23e3e',
         });
         setErrors({});
     };
@@ -205,6 +209,27 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd }) => {
                     placeholder="Notas sobre esta conta"
                     rows={2}
                 />
+            </div>
+
+            <div className="form-group">
+                <label>Cor do Ícone</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: '5px' }}>
+                    {COLORS.map(color => (
+                        <div
+                            key={color}
+                            onClick={() => setFormData(prev => ({ ...prev, color }))}
+                            style={{
+                                backgroundColor: color,
+                                width: '100%',
+                                paddingTop: '100%', // Aspect ratio 1:1
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                border: formData.color === color ? '2px solid white' : '2px solid transparent',
+                                position: 'relative'
+                            }}
+                        />
+                    ))}
+                </div>
             </div>
 
             <div className="form-row">
