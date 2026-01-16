@@ -302,7 +302,36 @@ body {
 }
 
 .item-icon-container {
-    display: none; /* Can be enabled if we want icons */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background-color: var(--issuer-color, var(--primary-color));
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+}
+
+/* Grid Mode: Icon on top or left? Authy uses grid cards with logo. */
+.grid-item .item-icon-container {
+    margin: 0 auto 10px auto;
+    width: 64px;
+    height: 64px;
+    font-size: 32px;
+    border-radius: var(--radius-md);
+}
+
+.grid-item {
+    align-items: center;
+    text-align: center;
+    border-top: 4px solid var(--issuer-color, var(--primary-color));
+}
+
+.grid-item .item-header {
+    align-items: center;
 }
 
 /* Token Display */
