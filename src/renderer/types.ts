@@ -34,6 +34,7 @@ export interface AppSettings {
     runOnStartup: boolean;
     autoLock: boolean;
     autoLockTimeout: number;
+    blurOnInactive: boolean;
 }
 
 declare global {

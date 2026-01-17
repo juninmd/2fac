@@ -10,7 +10,8 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
         minimizeToTray: false,
         runOnStartup: false,
         autoLock: true,
-        autoLockTimeout: 5
+        autoLockTimeout: 5,
+        blurOnInactive: true
     });
 
     // Password Change State
@@ -124,6 +125,18 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
                         </label>
                     </div>
                 )}
+
+                <div className="setting-item" style={{ marginBottom: '15px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                        <input
+                            type="checkbox"
+                            checked={settings.blurOnInactive}
+                            onChange={(e) => handleSettingChange('blurOnInactive', e.target.checked)}
+                            style={{ marginRight: '10px' }}
+                        />
+                        Desfocar ao perder foco da janela (Segurança)
+                    </label>
+                </div>
             </div>
 
             <div className="settings-section" style={{ borderTop: '1px solid #444', paddingTop: '20px' }}>
