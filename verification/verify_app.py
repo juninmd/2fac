@@ -1,78 +1,105 @@
-from playwright.sync_api import sync_playwright, expect
 
-def run(playwright):
-    browser = playwright.chromium.launch(headless=True)
-    page = browser.new_page()
+import asyncio
+from playwright.async_api import async_playwright
 
-    # Mock window.electron
-    page.add_init_script("""
-        window.electron = {
-            get2FAItems: () => Promise.resolve([
-                {
-                    id: '1',
-                    account: 'jules@example.com',
-                    issuer: 'Google',
-                    secret: 'JBSWY3DPEHPK3PXP',
-                    algorithm: 'SHA1',
-                    digits: 6,
-                    period: 30,
-                    type: 'totp'
-                },
-                {
-                    id: '2',
-                    account: 'dev@github.com',
-                    issuer: 'GitHub',
-                    secret: 'JBSWY3DPEHPK3PXP',
-                    algorithm: 'SHA1',
-                    digits: 6,
-                    period: 30,
-                    type: 'totp'
-                }
-            ]),
-            add2FAItem: () => Promise.resolve({}),
-            remove2FAItem: () => Promise.resolve(true),
-            update2FAItem: () => Promise.resolve({}),
-            scanScreenQR: () => Promise.resolve({ success: false, error: 'Mock scan' }),
-            export2FA: () => Promise.resolve({ success: true }),
-            import2FA: () => Promise.resolve({ success: true }),
-            importAuthy: () => Promise.resolve({ success: true }),
-            setMasterPassword: () => Promise.resolve(true),
-            checkMasterPassword: () => Promise.resolve(true),
-            hasMasterPassword: () => Promise.resolve(false)
-        };
-    """)
+async def run():
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        # We need to polyfill window.electron since the renderer expects it
+        context = await browser.new_context()
+        await context.add_init_script("""
+            window.electron = {
+                getSettings: async () => ({
+                    minimizeToTray: false,
+                    runOnStartup: false,
+                    autoLock: false,
+                    autoLockTimeout: 5,
+                    blurOnInactive: true
+                }),
+                get2FAItems: async () => ([
+                    {
+                        id: '1',
+                        account: 'test@example.com',
+                        issuer: 'Google',
+                        secret: 'JBSWY3DPEHPK3PXP',
+                        color: '#d32f2f'
+                    }
+                ]),
+                checkMasterPassword: async () => true,
+                hasMasterPassword: async () => true,
+            };
+        """)
 
-    try:
-        page.goto("http://localhost:3000")
+        page = await context.new_page()
 
-        # 1. Setup Password
-        page.get_by_placeholder("Senha", exact=True).fill("1234")
-        page.get_by_placeholder("Confirmar Senha").fill("1234")
-        page.get_by_role("button", name="Criar Senha").click()
+        try:
+            # Wait for server to start
+            await asyncio.sleep(2)
 
-        # 2. Wait for items
-        expect(page.get_by_text("Google", exact=True)).to_be_visible()
-        expect(page.get_by_text("GitHub", exact=True)).to_be_visible()
+            # Go to app
+            await page.goto("http://localhost:3000")
 
-        # 3. Open Sidebar to check Add Item Form
-        # The gear icon has title "Adicionar Conta / Configurações"
-        page.get_by_title("Adicionar Conta / Configurações").click()
+            # Wait for lock screen
+            await page.wait_for_selector('.lock-screen')
+            print("Lock screen visible")
 
-        # 4. Check Scan Button
-        expect(page.get_by_text("Escanear QR da Tela")).to_be_visible()
+            # Unlock
+            await page.fill('input[type="password"]', '1234')
+            await page.click('button.lock-button')
 
-        # 5. Check Circular Timer exists (class .circular-timer)
-        expect(page.locator(".circular-timer")).to_have_count(2)
+            # Wait for app content
+            await page.wait_for_selector('.app-content')
+            print("App content visible")
 
-        # 6. Take screenshot
-        page.screenshot(path="verification/verification.png")
-        print("Verification successful")
+            # 1. Verify Header Buttons Split
+            # Check if "+" and "Gear" buttons exist separately
 
-    except Exception as e:
-        print(f"Verification failed: {e}")
-        page.screenshot(path="verification/error.png")
-    finally:
-        browser.close()
+            # Click "+" button
+            await page.click('button[title="Adicionar Conta"]')
+            await asyncio.sleep(1)
+            # Take screenshot of Add Sidebar
+            await page.screenshot(path="verification/add_sidebar.png")
+            print("Captured add_sidebar.png")
 
-with sync_playwright() as playwright:
-    run(playwright)
+            # Close sidebar (click again)
+            await page.click('button[title="Adicionar Conta"]')
+            await asyncio.sleep(0.5)
+
+            # Click "Gear" button
+            await page.click('button[title="Gerenciamento"]')
+            await asyncio.sleep(1)
+            # Take screenshot of Settings Sidebar
+            await page.screenshot(path="verification/settings_sidebar.png")
+            print("Captured settings_sidebar.png")
+
+            # 2. Verify Settings Checkbox for Blur
+            # Click "Preferências" inside Settings Sidebar
+            await page.click('text=Preferências')
+            await asyncio.sleep(1)
+            await page.screenshot(path="verification/settings_modal.png")
+            print("Captured settings_modal.png")
+
+            # 3. Verify Blur Overlay
+            # Close settings
+            await page.click('text=Voltar')
+            await asyncio.sleep(0.5)
+            # Close sidebar
+            await page.click('button[title="Gerenciamento"]')
+
+            # Simulate window blur
+            await page.evaluate("window.dispatchEvent(new Event('blur'))")
+            await asyncio.sleep(1)
+            await page.screenshot(path="verification/blur_overlay.png")
+            print("Captured blur_overlay.png")
+
+            print("Verification script finished successfully.")
+
+        except Exception as e:
+            print(f"Error: {e}")
+            # Take screenshot of error state
+            await page.screenshot(path="verification/error.png")
+        finally:
+            await browser.close()
+
+if __name__ == "__main__":
+    asyncio.run(run())

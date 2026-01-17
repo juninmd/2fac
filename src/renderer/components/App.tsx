@@ -13,9 +13,21 @@ const App: React.FC = () => {
     const [isLocked, setIsLocked] = useState(true);
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
     const [searchQuery, setSearchQuery] = useState('');
-    const [showSidebar, setShowSidebar] = useState(false);
+    const [sidebarMode, setSidebarMode] = useState<'none' | 'add' | 'settings'>('none');
     const [showSettings, setShowSettings] = useState(false);
     const [settings, setSettings] = useState<any>(null);
+    const [isWindowFocused, setIsWindowFocused] = useState(true);
+
+    useEffect(() => {
+        const handleFocus = () => setIsWindowFocused(true);
+        const handleBlur = () => setIsWindowFocused(false);
+        window.addEventListener('focus', handleFocus);
+        window.addEventListener('blur', handleBlur);
+        return () => {
+             window.removeEventListener('focus', handleFocus);
+             window.removeEventListener('blur', handleBlur);
+        };
+    }, []);
 
     useEffect(() => {
         loadSettings();
@@ -210,6 +222,13 @@ const App: React.FC = () => {
                 <div className="header-right">
                     <button
                         className="btn-icon"
+                        onClick={() => setSidebarMode(sidebarMode === 'add' ? 'none' : 'add')}
+                        title="Adicionar Conta"
+                    >
+                        +
+                    </button>
+                    <button
+                        className="btn-icon"
                         onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
                         title={viewMode === 'grid' ? 'Ver em Lista' : 'Ver em Grade'}
                     >
@@ -217,8 +236,8 @@ const App: React.FC = () => {
                     </button>
                     <button
                         className="btn-icon"
-                        onClick={() => setShowSidebar(!showSidebar)}
-                        title="Adicionar Conta / Configurações"
+                        onClick={() => setSidebarMode(sidebarMode === 'settings' ? 'none' : 'settings')}
+                        title="Gerenciamento"
                     >
                         ⚙
                     </button>
@@ -233,33 +252,45 @@ const App: React.FC = () => {
             </header>
 
             <div className="app-content">
-                {showSidebar && (
-                    <div className="sidebar">
-                        <div className="sidebar-section">
-                            <h3>Adicionar Conta</h3>
-                            <AddItemForm onAdd={(item) => {
-                                handleAddItem(item);
-                                setShowSidebar(false);
-                            }} />
+                {!isWindowFocused && settings?.blurOnInactive && !isLocked && (
+                    <div className="blur-overlay">
+                        <div className="blur-message">
+                            <span>🛡️ App desfocado</span>
                         </div>
+                    </div>
+                )}
 
-                        <div className="sidebar-section">
-                            <h3>Gerenciamento</h3>
-                            <div className="sidebar-buttons">
-                                <button className="btn btn-secondary full-width" onClick={() => { setShowSettings(true); setShowSidebar(false); }}>
-                                    ⚙ Configurações
-                                </button>
-                                <button className="btn btn-secondary full-width" onClick={handleExport}>
-                                    📥 Exportar Backup
-                                </button>
-                                <button className="btn btn-secondary full-width" onClick={handleImport}>
-                                    📤 Importar JSON
-                                </button>
-                                <button className="btn btn-secondary full-width" onClick={handleImportAuthy}>
-                                    📱 Importar Authy
-                                </button>
+                {sidebarMode !== 'none' && (
+                    <div className="sidebar">
+                        {sidebarMode === 'add' && (
+                            <div className="sidebar-section">
+                                <h3>Adicionar Conta</h3>
+                                <AddItemForm onAdd={(item) => {
+                                    handleAddItem(item);
+                                    setSidebarMode('none');
+                                }} />
                             </div>
-                        </div>
+                        )}
+
+                        {sidebarMode === 'settings' && (
+                            <div className="sidebar-section">
+                                <h3>Gerenciamento</h3>
+                                <div className="sidebar-buttons">
+                                    <button className="btn btn-secondary full-width" onClick={() => { setShowSettings(true); setSidebarMode('none'); }}>
+                                        ⚙ Preferências
+                                    </button>
+                                    <button className="btn btn-secondary full-width" onClick={handleExport}>
+                                        📥 Exportar Backup
+                                    </button>
+                                    <button className="btn btn-secondary full-width" onClick={handleImport}>
+                                        📤 Importar JSON
+                                    </button>
+                                    <button className="btn btn-secondary full-width" onClick={handleImportAuthy}>
+                                        📱 Importar Authy
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -271,7 +302,7 @@ const App: React.FC = () => {
                     ) : items.length === 0 ? (
                         <div className="empty-state">
                             <p>Nenhum item 2FA adicionado ainda</p>
-                            <button className="btn btn-primary" onClick={() => setShowSidebar(true)}>
+                            <button className="btn btn-primary" onClick={() => setSidebarMode('add')}>
                                 + Adicionar primeira conta
                             </button>
                         </div>

@@ -237,7 +237,8 @@ ipcMain.handle('get-settings', () => {
         minimizeToTray: false,
         runOnStartup: false,
         autoLock: true,
-        autoLockTimeout: 5 // minutes
+        autoLockTimeout: 5, // minutes
+        blurOnInactive: true
     });
 });
 
