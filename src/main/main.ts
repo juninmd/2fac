@@ -177,6 +177,112 @@ ipcMain.handle('export-2fa', async () => {
     return { success: false };
 });
 
+ipcMain.handle('export-2fa-encrypted', async (_event, password) => {
+    const items = store.get('twoFAItems', []);
+    const result = await dialog.showSaveDialog(mainWindow!, {
+        defaultPath: `2fa-backup-encrypted-${new Date().getTime()}.enc`,
+        filters: [{ name: 'Encrypted 2FA Backup', extensions: ['enc'] }],
+    });
+
+    if (!result.canceled && result.filePath) {
+        try {
+            const data = JSON.stringify(items);
+            const algorithm = 'aes-256-gcm';
+            // Use PBKDF2 to derive a key from the password
+            const salt = crypto.randomBytes(32);
+            const key = crypto.pbkdf2Sync(password, salt, 100000, 32, 'sha256');
+            const iv = crypto.randomBytes(16);
+
+            const cipher = crypto.createCipheriv(algorithm, key, iv);
+            let encrypted = cipher.update(data, 'utf8', 'hex');
+            encrypted += cipher.final('hex');
+            const authTag = cipher.getAuthTag();
+
+            // Format: version(1)|salt(32)|iv(16)|authTag(16)|encryptedData
+            // We use hex encoding for the file content to be text-safe, or just binary buffer.
+            // Let's use a JSON wrapper for easier parsing or just concat buffers.
+            // JSON wrapper is safer for versioning.
+            const backupFile = {
+                version: 1,
+                salt: salt.toString('hex'),
+                iv: iv.toString('hex'),
+                authTag: authTag.toString('hex'),
+                data: encrypted
+            };
+
+            fs.writeFileSync(result.filePath, JSON.stringify(backupFile));
+            return { success: true, path: result.filePath };
+        } catch (error: any) {
+            console.error('Export encryption error:', error);
+            return { success: false, error: error.message };
+        }
+    }
+    return { success: false };
+});
+
+ipcMain.handle('import-2fa-encrypted', async (_event, password) => {
+    const result = await dialog.showOpenDialog(mainWindow!, {
+        filters: [{ name: 'Encrypted 2FA Backup', extensions: ['enc'] }],
+        properties: ['openFile'],
+    });
+
+    if (!result.canceled && result.filePaths[0]) {
+        try {
+            const filePath = result.filePaths[0];
+            const fileContent = fs.readFileSync(filePath, 'utf-8');
+
+            let backupData;
+            try {
+                backupData = JSON.parse(fileContent);
+            } catch (e) {
+                return { success: false, error: 'Invalid backup file format' };
+            }
+
+            if (!backupData.version || !backupData.salt || !backupData.iv || !backupData.authTag || !backupData.data) {
+                 return { success: false, error: 'Invalid backup file structure' };
+            }
+
+            const algorithm = 'aes-256-gcm';
+            const salt = Buffer.from(backupData.salt, 'hex');
+            const iv = Buffer.from(backupData.iv, 'hex');
+            const authTag = Buffer.from(backupData.authTag, 'hex');
+            const encryptedData = backupData.data;
+
+            const key = crypto.pbkdf2Sync(password, salt, 100000, 32, 'sha256');
+            const decipher = crypto.createDecipheriv(algorithm, key, iv);
+            decipher.setAuthTag(authTag);
+
+            let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
+            decrypted += decipher.final('utf8');
+
+            const importedItems = JSON.parse(decrypted);
+
+            // Assign new IDs to imported items to avoid collisions?
+            // Or keep IDs if they are backups. Authy restore keeps context.
+            // Let's regenerate IDs to be safe against duplicates if we are merging.
+             const itemsWithIds = importedItems.map((item: any) => ({
+                ...item,
+                id: Date.now().toString() + Math.random(),
+            }));
+
+            const currentItems = store.get('twoFAItems', []) as any[];
+            const allItems = [...currentItems, ...itemsWithIds];
+            store.set('twoFAItems', allItems);
+
+            return { success: true, count: itemsWithIds.length };
+
+        } catch (error: any) {
+            console.error('Import decryption error:', error);
+            // Distinguish between bad password and other errors if possible
+            if (error.message.includes('auth tag')) {
+                 return { success: false, error: 'Senha incorreta ou arquivo corrompido' };
+            }
+            return { success: false, error: error.message };
+        }
+    }
+    return { success: false };
+});
+
 ipcMain.handle('scan-screen-qr', async () => {
     try {
         // Minimize window to reveal screen content

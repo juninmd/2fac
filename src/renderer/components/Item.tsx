@@ -81,7 +81,7 @@ const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, onMove, view
     };
 
     const period = item.period || 30;
-    const progressPercentage = (timeLeft / period) * 100;
+    // const progressPercentage = (timeLeft / period) * 100;
 
     // Circular timer calculations
     const radius = 10;

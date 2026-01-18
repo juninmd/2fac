@@ -39,7 +39,7 @@ const App: React.FC = () => {
     };
 
     useEffect(() => {
-        let timer: NodeJS.Timeout;
+        let timer: ReturnType<typeof setTimeout>;
 
         const resetTimer = () => {
             if (timer) clearTimeout(timer);
@@ -158,10 +158,27 @@ const App: React.FC = () => {
             if (result.success) {
                 alert(`Backup exportado com sucesso: ${result.path}`);
             } else {
-                alert('Exportação cancelada');
+                // alert('Exportação cancelada');
             }
         } catch (error) {
             console.error('Failed to export:', error);
+            alert('Erro ao exportar');
+        }
+    };
+
+    const handleExportEncrypted = async () => {
+        const password = prompt("Digite uma senha para criptografar o backup:");
+        if (!password) return;
+
+        try {
+            const result = await window.electron.export2FAEncrypted(password);
+            if (result.success) {
+                alert(`Backup criptografado exportado com sucesso: ${result.path}`);
+            } else if (result.error) {
+                alert(`Erro ao exportar: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Failed to export encrypted:', error);
             alert('Erro ao exportar');
         }
     };
@@ -173,10 +190,28 @@ const App: React.FC = () => {
                 await loadItems();
                 alert(`${result.count} itens importados com sucesso!`);
             } else {
-                alert('Importação cancelada');
+                // alert('Importação cancelada');
             }
         } catch (error) {
             console.error('Failed to import:', error);
+            alert('Erro ao importar');
+        }
+    };
+
+    const handleImportEncrypted = async () => {
+        const password = prompt("Digite a senha do backup:");
+        if (!password) return;
+
+        try {
+            const result = await window.electron.import2FAEncrypted(password);
+            if (result.success) {
+                await loadItems();
+                alert(`${result.count} itens importados com sucesso!`);
+            } else if (result.error) {
+                alert(`Erro ao importar: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Failed to import encrypted:', error);
             alert('Erro ao importar');
         }
     };
@@ -279,10 +314,16 @@ const App: React.FC = () => {
                                     <button className="btn btn-secondary full-width" onClick={() => { setShowSettings(true); setSidebarMode('none'); }}>
                                         ⚙ Preferências
                                     </button>
-                                    <button className="btn btn-secondary full-width" onClick={handleExport}>
-                                        📥 Exportar Backup
+                                    <button className="btn btn-secondary full-width" onClick={handleExportEncrypted}>
+                                        🔒 Exportar Criptografado
                                     </button>
-                                    <button className="btn btn-secondary full-width" onClick={handleImport}>
+                                    <button className="btn btn-secondary full-width" onClick={handleImportEncrypted}>
+                                        🔓 Importar Criptografado
+                                    </button>
+                                    <button className="btn btn-secondary full-width" style={{opacity: 0.7}} onClick={handleExport}>
+                                        📥 Exportar JSON (Inseguro)
+                                    </button>
+                                    <button className="btn btn-secondary full-width" style={{opacity: 0.7}} onClick={handleImport}>
                                         📤 Importar JSON
                                     </button>
                                     <button className="btn btn-secondary full-width" onClick={handleImportAuthy}>
