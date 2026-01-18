@@ -18,7 +18,9 @@ export interface ElectronAPI {
     remove2FAItem: (id: string) => Promise<boolean>;
     update2FAItem: (id: string, item: any) => Promise<any>;
     export2FA: () => Promise<{ success: boolean; path?: string }>;
+    export2FAEncrypted: (password: string) => Promise<{ success: boolean; path?: string; error?: string }>;
     import2FA: () => Promise<{ success: boolean; count?: number }>;
+    import2FAEncrypted: (password: string) => Promise<{ success: boolean; count?: number; error?: string }>;
     importAuthy: () => Promise<{ success: boolean; count?: number; error?: string }>;
     scanScreenQR: () => Promise<{ success: boolean; data?: string; error?: string }>;
     setMasterPassword: (password: string) => Promise<boolean>;
