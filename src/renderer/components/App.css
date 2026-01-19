@@ -269,10 +269,23 @@ body {
     flex-direction: column;
     gap: 16px;
     user-select: none;
+    touch-action: none; /* Recommended for dnd-kit */
+}
+
+.item.draggable {
+    cursor: grab;
+}
+
+.item.dragging {
+    box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+    z-index: 999;
+    border-color: var(--primary-color);
+    cursor: grabbing;
+    opacity: 0.8;
 }
 
 .item:hover {
-    transform: translateY(-4px);
+    /* transform: translateY(-4px);  Removing transform on hover to avoid conflict with drag transform */
     box-shadow: var(--shadow-lg);
     border-color: var(--primary-color);
 }

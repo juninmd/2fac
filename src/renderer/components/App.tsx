@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { reorder } from '../utils/arrayUtils';
 import { TwoFAItem } from '../types';
 import ItemList from './ItemList';
 import AddItemForm from './AddItemForm';
@@ -18,6 +20,14 @@ const App: React.FC = () => {
     const [settings, setSettings] = useState<any>(null);
     const [isWindowFocused, setIsWindowFocused] = useState(true);
 
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        })
+    );
+
     useEffect(() => {
         const handleFocus = () => setIsWindowFocused(true);
         const handleBlur = () => setIsWindowFocused(false);
@@ -28,6 +38,33 @@ const App: React.FC = () => {
              window.removeEventListener('blur', handleBlur);
         };
     }, []);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === 'f') {
+                    e.preventDefault();
+                    document.querySelector<HTMLInputElement>('.search-bar')?.focus();
+                } else if (e.key === 'l') {
+                    e.preventDefault();
+                    setIsLocked(true);
+                }
+            } else if (e.key === 'Escape') {
+                if (sidebarMode !== 'none') {
+                    setSidebarMode('none');
+                }
+                if (showSettings) {
+                    setShowSettings(false);
+                }
+                if (searchQuery) {
+                    setSearchQuery('');
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [sidebarMode, showSettings, searchQuery]);
 
     useEffect(() => {
         loadSettings();
@@ -149,6 +186,20 @@ const App: React.FC = () => {
             await window.electron.set2FAItems(newItems);
         } catch (error) {
             console.error('Failed to update order', error);
+        }
+    };
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+
+        if (oldIndex !== -1 && newIndex !== -1) {
+            const newItems = reorder(items, oldIndex, newIndex);
+            setItems(newItems);
+            window.electron.set2FAItems(newItems).catch(console.error);
         }
     };
 
@@ -352,13 +403,20 @@ const App: React.FC = () => {
                             <p>Nenhuma conta encontrada para "{searchQuery}"</p>
                         </div>
                     ) : (
-                        <ItemList
-                            items={filteredItems}
-                            onRemove={handleRemoveItem}
-                            viewMode={viewMode}
-                            onUpdate={handleUpdateItem}
-                            onMove={handleMoveItem}
-                        />
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleDragEnd}
+                        >
+                            <ItemList
+                                items={filteredItems}
+                                onRemove={handleRemoveItem}
+                                viewMode={viewMode}
+                                onUpdate={handleUpdateItem}
+                                onMove={handleMoveItem}
+                                isDragEnabled={searchQuery.trim() === ''}
+                            />
+                        </DndContext>
                     )}
                 </div>
             </div>

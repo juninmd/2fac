@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { TwoFAItem } from '../types';
 import * as OTPAuth from 'otpauth';
 import { COLORS } from '../constants';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface TwoFAItemProps {
     item: TwoFAItem;
@@ -11,9 +13,10 @@ interface TwoFAItemProps {
     viewMode: 'list' | 'grid';
     isFirst: boolean;
     isLast: boolean;
+    isDragEnabled: boolean;
 }
 
-const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, onMove, viewMode, isFirst, isLast }) => {
+const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, onMove, viewMode, isFirst, isLast, isDragEnabled }) => {
     const [token, setToken] = useState<string>('');
     const [timeLeft, setTimeLeft] = useState<number>(30);
     const [copied, setCopied] = useState(false);
@@ -91,14 +94,33 @@ const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, onMove, view
     const timerColor = isLowTime ? '#f44336' : '#d32f2f'; // Match primary color
 
     const itemColor = item.color || '#e23e3e';
-    const itemStyle = { '--issuer-color': itemColor } as React.CSSProperties;
+
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: item.id, disabled: !isDragEnabled });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        '--issuer-color': itemColor,
+        opacity: isDragging ? 0.5 : 1,
+        zIndex: isDragging ? 999 : 'auto',
+    } as React.CSSProperties;
 
     // First letter of issuer for icon
     const iconLetter = item.issuer ? item.issuer.charAt(0).toUpperCase() : '?';
 
     if (isEditing) {
         return (
-            <div className={`item ${viewMode}-item editing`} style={itemStyle}>
+            <div
+                className={`item ${viewMode}-item editing`}
+                style={{ '--issuer-color': itemColor } as React.CSSProperties}
+            >
                 <form onSubmit={handleEditSubmit} className="edit-form">
                     <div className="form-group">
                         <input
@@ -148,7 +170,14 @@ const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, onMove, view
     }
 
     return (
-        <div className={`item ${viewMode}-item`} onClick={copyToClipboard} style={itemStyle}>
+        <div
+            ref={setNodeRef}
+            style={style}
+            {...attributes}
+            {...listeners}
+            className={`item ${viewMode}-item ${isDragging ? 'dragging' : ''} ${isDragEnabled ? 'draggable' : ''}`}
+            onClick={copyToClipboard}
+        >
             {viewMode === 'list' && (
                 <>
                  <div className="item-icon-container">
