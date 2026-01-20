@@ -18,6 +18,7 @@
     "electron:build": "npm run build && electron-builder"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
     "@types/node": "^20.10.6",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
@@ -28,10 +29,11 @@
     "concurrently": "^8.2.2",
     "crypto-browserify": "^3.12.1",
     "css-loader": "^7.1.2",
-    "electron": "^27.0.0",
+    "electron": "^27.3.11",
     "electron-builder": "^24.6.4",
     "eslint": "^8.56.0",
-    "html-webpack-plugin": "^5.6.5",
+    "html-webpack-plugin": "^5.6.6",
+    "playwright": "^1.57.0",
     "process": "^0.11.10",
     "stream-browserify": "^3.0.0",
     "style-loader": "^4.0.0",
