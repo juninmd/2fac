@@ -193,7 +193,7 @@ body {
     position: relative;
 }
 
-/* Sidebar */
+/* Sidebar (Add/Settings) */
 .sidebar {
     width: 300px;
     background-color: var(--bg-surface);
@@ -241,6 +241,200 @@ body {
     border: 2px solid var(--bg-app);
 }
 
+/* Split View Container (List Mode) */
+.split-view-container {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    height: 100%;
+}
+
+.sidebar-list-container {
+    width: 280px;
+    background-color: var(--bg-surface);
+    border-right: 1px solid var(--border-color);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.detail-container {
+    flex: 1;
+    background-color: var(--bg-app);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Sidebar List Item */
+.sidebar-list-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    gap: 12px;
+    cursor: pointer;
+    transition: var(--transition);
+    border-bottom: 1px solid transparent;
+}
+
+.sidebar-list-item:hover {
+    background-color: var(--bg-surface-hover);
+}
+
+.sidebar-list-item.selected {
+    background-color: rgba(211, 47, 47, 0.1); /* Low opacity primary */
+    border-right: 3px solid var(--primary-color);
+}
+
+.sidebar-item-info {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.sidebar-item-issuer {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.sidebar-item-account {
+    font-size: 14px;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Token Detail View */
+.token-detail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+    padding: 40px;
+    max-width: 600px;
+    width: 100%;
+}
+
+.detail-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    text-align: center;
+}
+
+.detail-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    font-weight: bold;
+    color: white;
+}
+
+.detail-issuer {
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.detail-account {
+    font-size: 24px;
+    margin: 0;
+    font-weight: 500;
+}
+
+.detail-main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+}
+
+.big-token-container {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 40px;
+    background-color: var(--bg-surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: var(--transition);
+    position: relative;
+}
+
+.big-token-container:hover {
+    border-color: var(--primary-color);
+    transform: scale(1.02);
+}
+
+.big-token {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 48px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    color: var(--primary-color);
+}
+
+.copy-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 24px;
+    cursor: pointer;
+    padding: 8px;
+}
+
+.copy-btn:hover {
+    color: var(--text-primary);
+}
+
+.detail-copied-toast {
+    position: absolute;
+    bottom: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--success-color);
+    color: white;
+    padding: 4px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: bold;
+    animation: fadeIn 0.2s;
+}
+
+.big-timer {
+    display: flex;
+    justify-content: center;
+}
+
+.detail-actions {
+    display: flex;
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.delete-btn {
+    color: var(--danger-color);
+    border-color: rgba(244, 67, 54, 0.3);
+}
+
+.delete-btn:hover {
+    background-color: rgba(244, 67, 54, 0.1);
+    border-color: var(--danger-color);
+}
+
 /* Grid Layout */
 .item-list.grid-mode {
     display: grid;
@@ -248,7 +442,7 @@ body {
     gap: 20px;
 }
 
-/* List Layout */
+/* List Layout (Deprecated/Legacy for single column view if needed) */
 .item-list.list-mode {
     display: flex;
     flex-direction: column;
@@ -269,7 +463,7 @@ body {
     flex-direction: column;
     gap: 16px;
     user-select: none;
-    touch-action: none; /* Recommended for dnd-kit */
+    touch-action: none;
 }
 
 .item.draggable {
@@ -285,7 +479,6 @@ body {
 }
 
 .item:hover {
-    /* transform: translateY(-4px);  Removing transform on hover to avoid conflict with drag transform */
     box-shadow: var(--shadow-lg);
     border-color: var(--primary-color);
 }
@@ -328,7 +521,13 @@ body {
     flex-shrink: 0;
 }
 
-/* Grid Mode: Icon on top or left? Authy uses grid cards with logo. */
+.item-icon-container.small {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+}
+
+/* Grid Mode Specifics */
 .grid-item .item-icon-container {
     margin: 0 auto 10px auto;
     width: 64px;
@@ -414,41 +613,10 @@ body {
     to { opacity: 1; }
 }
 
-/* List Mode Overrides */
-.list-item {
-    flex-direction: row;
-    align-items: center;
-    padding: 12px 20px;
-    gap: 20px;
-}
-
-.list-item:hover {
-    transform: none;
-    background-color: var(--bg-surface-hover);
-}
-
-.list-item .item-header {
-    flex: 1;
-    min-width: 0;
-}
-
-.list-item .token-display {
-    background: transparent;
-    padding: 0;
-    gap: 20px;
-}
-
-.list-item .token {
-    font-size: 24px;
-}
-
-.list-item .item-actions {
-    opacity: 1; /* Always show actions in list view or on hover */
-}
-
 /* Form Styling */
 .form-group {
     margin-bottom: 20px;
+    width: 100%;
 }
 
 .form-group label {

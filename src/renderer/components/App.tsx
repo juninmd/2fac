@@ -6,6 +6,8 @@ import ItemList from './ItemList';
 import AddItemForm from './AddItemForm';
 import LockScreen from './LockScreen';
 import Settings from './Settings';
+import SidebarList from './SidebarList';
+import TokenDetail from './TokenDetail';
 import './App.css';
 
 const App: React.FC = () => {
@@ -14,6 +16,7 @@ const App: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [isLocked, setIsLocked] = useState(true);
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
+    const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [sidebarMode, setSidebarMode] = useState<'none' | 'add' | 'settings'>('none');
     const [showSettings, setShowSettings] = useState(false);
@@ -108,6 +111,13 @@ const App: React.FC = () => {
             loadItems();
         }
     }, [isLocked]);
+
+    // Select first item if none selected when in list mode and items change
+    useEffect(() => {
+        if (viewMode === 'list' && !selectedItemId && filteredItems.length > 0) {
+            setSelectedItemId(filteredItems[0].id);
+        }
+    }, [viewMode, filteredItems, selectedItemId]);
 
     useEffect(() => {
         if (searchQuery.trim() === '') {
@@ -386,39 +396,72 @@ const App: React.FC = () => {
                     </div>
                 )}
 
-                <div className={`main-area ${viewMode}-view`}>
-                    {showSettings ? (
-                        <Settings onClose={() => setShowSettings(false)} />
-                    ) : loading ? (
-                        <div className="loading">Carregando...</div>
-                    ) : items.length === 0 ? (
-                        <div className="empty-state">
-                            <p>Nenhum item 2FA adicionado ainda</p>
-                            <button className="btn btn-primary" onClick={() => setSidebarMode('add')}>
-                                + Adicionar primeira conta
-                            </button>
-                        </div>
-                    ) : filteredItems.length === 0 ? (
-                        <div className="empty-state">
-                            <p>Nenhuma conta encontrada para "{searchQuery}"</p>
-                        </div>
-                    ) : (
+                {viewMode === 'list' && !showSettings && !loading && items.length > 0 ? (
+                    <div className="split-view-container">
                         <DndContext
                             sensors={sensors}
                             collisionDetection={closestCenter}
                             onDragEnd={handleDragEnd}
                         >
-                            <ItemList
-                                items={filteredItems}
-                                onRemove={handleRemoveItem}
-                                viewMode={viewMode}
-                                onUpdate={handleUpdateItem}
-                                onMove={handleMoveItem}
-                                isDragEnabled={searchQuery.trim() === ''}
-                            />
+                            <div className="sidebar-list-container">
+                                <SidebarList
+                                    items={filteredItems}
+                                    selectedItemId={selectedItemId}
+                                    onSelect={setSelectedItemId}
+                                    onMove={handleMoveItem}
+                                    isDragEnabled={searchQuery.trim() === ''}
+                                />
+                            </div>
                         </DndContext>
-                    )}
-                </div>
+                        <div className="detail-container">
+                            {selectedItemId && items.find(i => i.id === selectedItemId) ? (
+                                <TokenDetail
+                                    item={items.find(i => i.id === selectedItemId)!}
+                                    onUpdate={handleUpdateItem}
+                                    onRemove={handleRemoveItem}
+                                />
+                            ) : (
+                                <div className="empty-state">
+                                    <p>Selecione uma conta</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ) : (
+                    <div className={`main-area ${viewMode}-view`}>
+                        {showSettings ? (
+                            <Settings onClose={() => setShowSettings(false)} />
+                        ) : loading ? (
+                            <div className="loading">Carregando...</div>
+                        ) : items.length === 0 ? (
+                            <div className="empty-state">
+                                <p>Nenhum item 2FA adicionado ainda</p>
+                                <button className="btn btn-primary" onClick={() => setSidebarMode('add')}>
+                                    + Adicionar primeira conta
+                                </button>
+                            </div>
+                        ) : filteredItems.length === 0 ? (
+                            <div className="empty-state">
+                                <p>Nenhuma conta encontrada para "{searchQuery}"</p>
+                            </div>
+                        ) : (
+                            <DndContext
+                                sensors={sensors}
+                                collisionDetection={closestCenter}
+                                onDragEnd={handleDragEnd}
+                            >
+                                <ItemList
+                                    items={filteredItems}
+                                    onRemove={handleRemoveItem}
+                                    viewMode={viewMode}
+                                    onUpdate={handleUpdateItem}
+                                    onMove={handleMoveItem}
+                                    isDragEnabled={searchQuery.trim() === ''}
+                                />
+                            </DndContext>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );

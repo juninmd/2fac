@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { TwoFAItem } from '../types';
-import * as OTPAuth from 'otpauth';
+import { useToken } from '../hooks/useToken';
 import { COLORS } from '../constants';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -17,51 +17,10 @@ interface TwoFAItemProps {
 }
 
 const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, onMove, viewMode, isFirst, isLast, isDragEnabled }) => {
-    const [token, setToken] = useState<string>('');
-    const [timeLeft, setTimeLeft] = useState<number>(30);
+    const { token, timeLeft, period } = useToken(item);
     const [copied, setCopied] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState({ account: item.account, issuer: item.issuer, color: item.color || '#e23e3e' });
-
-    useEffect(() => {
-        generateToken();
-        const interval = setInterval(() => {
-            generateToken();
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, [item]);
-
-    const generateToken = () => {
-        try {
-            const totp = new OTPAuth.TOTP({
-                issuer: item.issuer,
-                label: item.account,
-                algorithm: (item.algorithm || 'SHA1').toUpperCase(),
-                digits: item.digits || 6,
-                period: item.period || 30,
-                secret: OTPAuth.Secret.fromBase32(item.secret),
-            });
-
-            const newToken = totp.generate();
-
-            // Format token with space in middle if 6 digits
-            if (newToken.length === 6) {
-                setToken(newToken.slice(0, 3) + ' ' + newToken.slice(3));
-            } else {
-                setToken(newToken);
-            }
-
-            // Calculate seconds remaining
-            const now = Math.floor(Date.now() / 1000);
-            const timeStep = item.period || 30;
-            const secondsIntoStep = now % timeStep;
-            setTimeLeft(timeStep - secondsIntoStep);
-        } catch (error) {
-            console.error('Failed to generate token:', error);
-            setToken('ERROR');
-        }
-    };
 
     const copyToClipboard = () => {
         const rawToken = token.replace(' ', '');
@@ -82,9 +41,6 @@ const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, onMove, view
         onUpdate(item.id, editForm);
         setIsEditing(false);
     };
-
-    const period = item.period || 30;
-    // const progressPercentage = (timeLeft / period) * 100;
 
     // Circular timer calculations
     const radius = 10;
