@@ -235,7 +235,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd }) => {
             <div className="form-row">
                 <div className="form-group">
                     <label htmlFor="algorithm">Algoritmo</label>
-                    <select name="algorithm" value={formData.algorithm} onChange={handleChange}>
+                    <select id="algorithm" name="algorithm" value={formData.algorithm} onChange={handleChange}>
                         <option value="SHA1">SHA1</option>
                         <option value="SHA256">SHA256</option>
                         <option value="SHA512">SHA512</option>
@@ -244,7 +244,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd }) => {
 
                 <div className="form-group">
                     <label htmlFor="digits">Dígitos</label>
-                    <select name="digits" value={formData.digits} onChange={handleChange}>
+                    <select id="digits" name="digits" value={formData.digits} onChange={handleChange}>
                         <option value="6">6</option>
                         <option value="7">7</option>
                         <option value="8">8</option>
@@ -255,7 +255,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd }) => {
             <div className="form-row">
                 <div className="form-group">
                     <label htmlFor="period">Período (segundos)</label>
-                    <select name="period" value={formData.period} onChange={handleChange}>
+                    <select id="period" name="period" value={formData.period} onChange={handleChange}>
                         <option value="30">30</option>
                         <option value="60">60</option>
                     </select>
@@ -263,7 +263,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd }) => {
 
                 <div className="form-group">
                     <label htmlFor="encoding">Codificação</label>
-                    <select name="encoding" value={formData.encoding} onChange={handleChange}>
+                    <select id="encoding" name="encoding" value={formData.encoding} onChange={handleChange}>
                         <option value="base32">Base32</option>
                         <option value="base64">Base64</option>
                         <option value="ascii">ASCII</option>
