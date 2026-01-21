@@ -18,7 +18,7 @@ const App: React.FC = () => {
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const [sidebarMode, setSidebarMode] = useState<'none' | 'add' | 'settings'>('none');
+    const [sidebarMode, setSidebarMode] = useState<'none' | 'add'>('none');
     const [showSettings, setShowSettings] = useState(false);
     const [settings, setSettings] = useState<any>(null);
     const [isWindowFocused, setIsWindowFocused] = useState(true);
@@ -332,8 +332,8 @@ const App: React.FC = () => {
                     </button>
                     <button
                         className="btn-icon"
-                        onClick={() => setSidebarMode(sidebarMode === 'settings' ? 'none' : 'settings')}
-                        title="Gerenciamento"
+                        onClick={() => setShowSettings(true)}
+                        title="Configurações"
                     >
                         ⚙
                     </button>
@@ -356,43 +356,15 @@ const App: React.FC = () => {
                     </div>
                 )}
 
-                {sidebarMode !== 'none' && (
+                {sidebarMode === 'add' && (
                     <div className="sidebar">
-                        {sidebarMode === 'add' && (
-                            <div className="sidebar-section">
-                                <h3>Adicionar Conta</h3>
-                                <AddItemForm onAdd={(item) => {
-                                    handleAddItem(item);
-                                    setSidebarMode('none');
-                                }} />
-                            </div>
-                        )}
-
-                        {sidebarMode === 'settings' && (
-                            <div className="sidebar-section">
-                                <h3>Gerenciamento</h3>
-                                <div className="sidebar-buttons">
-                                    <button className="btn btn-secondary full-width" onClick={() => { setShowSettings(true); setSidebarMode('none'); }}>
-                                        ⚙ Preferências
-                                    </button>
-                                    <button className="btn btn-secondary full-width" onClick={handleExportEncrypted}>
-                                        🔒 Exportar Criptografado
-                                    </button>
-                                    <button className="btn btn-secondary full-width" onClick={handleImportEncrypted}>
-                                        🔓 Importar Criptografado
-                                    </button>
-                                    <button className="btn btn-secondary full-width" style={{opacity: 0.7}} onClick={handleExport}>
-                                        📥 Exportar JSON (Inseguro)
-                                    </button>
-                                    <button className="btn btn-secondary full-width" style={{opacity: 0.7}} onClick={handleImport}>
-                                        📤 Importar JSON
-                                    </button>
-                                    <button className="btn btn-secondary full-width" onClick={handleImportAuthy}>
-                                        📱 Importar Authy
-                                    </button>
-                                </div>
-                            </div>
-                        )}
+                        <div className="sidebar-section">
+                            <h3>Adicionar Conta</h3>
+                            <AddItemForm onAdd={(item) => {
+                                handleAddItem(item);
+                                setSidebarMode('none');
+                            }} />
+                        </div>
                     </div>
                 )}
 
@@ -430,7 +402,14 @@ const App: React.FC = () => {
                 ) : (
                     <div className={`main-area ${viewMode}-view`}>
                         {showSettings ? (
-                            <Settings onClose={() => setShowSettings(false)} />
+                            <Settings
+                                onClose={() => setShowSettings(false)}
+                                onExport={handleExport}
+                                onExportEncrypted={handleExportEncrypted}
+                                onImport={handleImport}
+                                onImportEncrypted={handleImportEncrypted}
+                                onImportAuthy={handleImportAuthy}
+                            />
                         ) : loading ? (
                             <div className="loading">Carregando...</div>
                         ) : items.length === 0 ? (
