@@ -27,9 +27,14 @@ jest.mock('./LockScreen', () => ({ onUnlock }: any) => (
     <button onClick={onUnlock}>Unlock</button>
   </div>
 ));
-jest.mock('./Settings', () => ({ onClose }: any) => (
+jest.mock('./Settings', () => ({ onClose, onExport, onExportEncrypted, onImport, onImportEncrypted, onImportAuthy }: any) => (
   <div data-testid="settings">
     <button onClick={onClose}>Close Settings</button>
+    <button onClick={onExport}>📥 Exportar JSON</button>
+    <button onClick={onExportEncrypted}>🔒 Exportar Backup</button>
+    <button onClick={onImport}>📤 Importar JSON</button>
+    <button onClick={onImportEncrypted}>🔓 Restaurar Backup</button>
+    <button onClick={onImportAuthy}>📱 Importar do Authy</button>
   </div>
 ));
 jest.mock('./SidebarList', () => (props: any) => (
@@ -320,8 +325,8 @@ describe('App', () => {
       fireEvent.click(screen.getByText('Unlock'));
       await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
-      fireEvent.click(screen.getByTitle('Gerenciamento'));
-      fireEvent.click(screen.getByText('📥 Exportar JSON (Inseguro)'));
+      fireEvent.click(screen.getByTitle('Configurações'));
+      fireEvent.click(screen.getByText('📥 Exportar JSON'));
 
       await waitFor(() => {
           expect(window.alert).toHaveBeenCalledWith('Erro ao exportar');
@@ -339,7 +344,7 @@ describe('App', () => {
       fireEvent.click(screen.getByText('Unlock'));
       await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
-      fireEvent.click(screen.getByTitle('Gerenciamento'));
+      fireEvent.click(screen.getByTitle('Configurações'));
       fireEvent.click(screen.getByText('📤 Importar JSON'));
 
       await waitFor(() => {
@@ -357,8 +362,8 @@ describe('App', () => {
         fireEvent.click(screen.getByText('Unlock'));
         await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
-        fireEvent.click(screen.getByTitle('Gerenciamento'));
-        fireEvent.click(screen.getByText('📱 Importar Authy'));
+        fireEvent.click(screen.getByTitle('Configurações'));
+        fireEvent.click(screen.getByText('📱 Importar do Authy'));
 
         await waitFor(() => {
             expect(mockImportAuthy).toHaveBeenCalled();
@@ -374,8 +379,8 @@ describe('App', () => {
         fireEvent.click(screen.getByText('Unlock'));
         await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
-        fireEvent.click(screen.getByTitle('Gerenciamento'));
-        fireEvent.click(screen.getByText('📱 Importar Authy'));
+        fireEvent.click(screen.getByTitle('Configurações'));
+        fireEvent.click(screen.getByText('📱 Importar do Authy'));
 
         await waitFor(() => {
             expect(window.alert).toHaveBeenCalledWith('Erro ao importar: File invalid');
@@ -391,8 +396,8 @@ describe('App', () => {
         fireEvent.click(screen.getByText('Unlock'));
         await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
-        fireEvent.click(screen.getByTitle('Gerenciamento'));
-        fireEvent.click(screen.getByText('📱 Importar Authy'));
+        fireEvent.click(screen.getByTitle('Configurações'));
+        fireEvent.click(screen.getByText('📱 Importar do Authy'));
 
         await waitFor(() => {
             expect(window.alert).toHaveBeenCalledWith('Erro ao importar Authy');
@@ -439,8 +444,8 @@ describe('App', () => {
         fireEvent.click(screen.getByText('Unlock'));
         await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
-        fireEvent.click(screen.getByTitle('Gerenciamento'));
-        fireEvent.click(screen.getByText('🔒 Exportar Criptografado'));
+        fireEvent.click(screen.getByTitle('Configurações'));
+        fireEvent.click(screen.getByText('🔒 Exportar Backup'));
 
         await waitFor(() => {
             expect(window.alert).toHaveBeenCalledWith('Erro ao exportar: Crypt Error');
@@ -457,8 +462,8 @@ describe('App', () => {
         fireEvent.click(screen.getByText('Unlock'));
         await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
-        fireEvent.click(screen.getByTitle('Gerenciamento'));
-        fireEvent.click(screen.getByText('🔒 Exportar Criptografado'));
+        fireEvent.click(screen.getByTitle('Configurações'));
+        fireEvent.click(screen.getByText('🔒 Exportar Backup'));
 
         await waitFor(() => {
             expect(window.alert).toHaveBeenCalledWith('Erro ao exportar');
@@ -475,8 +480,8 @@ describe('App', () => {
         fireEvent.click(screen.getByText('Unlock'));
         await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
-        fireEvent.click(screen.getByTitle('Gerenciamento'));
-        fireEvent.click(screen.getByText('🔓 Importar Criptografado'));
+        fireEvent.click(screen.getByTitle('Configurações'));
+        fireEvent.click(screen.getByText('🔓 Restaurar Backup'));
 
         await waitFor(() => {
             expect(window.alert).toHaveBeenCalledWith('Erro ao importar: Crypt Error');
@@ -493,8 +498,8 @@ describe('App', () => {
         fireEvent.click(screen.getByText('Unlock'));
         await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
-        fireEvent.click(screen.getByTitle('Gerenciamento'));
-        fireEvent.click(screen.getByText('🔓 Importar Criptografado'));
+        fireEvent.click(screen.getByTitle('Configurações'));
+        fireEvent.click(screen.getByText('🔓 Restaurar Backup'));
 
         await waitFor(() => {
             expect(window.alert).toHaveBeenCalledWith('Erro ao importar');
