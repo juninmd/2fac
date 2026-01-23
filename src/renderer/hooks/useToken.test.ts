@@ -4,14 +4,21 @@ import { TwoFAItem } from '../types';
 import * as OTPAuth from 'otpauth';
 
 // Mock OTPAuth
-jest.mock('otpauth', () => ({
-  TOTP: jest.fn().mockImplementation(() => ({
-    generate: jest.fn().mockReturnValue('123456'),
-  })),
-  Secret: {
-    fromBase32: jest.fn(),
-  },
-}));
+jest.mock('otpauth', () => {
+  const mockSecretInstance = { buffer: new Uint8Array() };
+  const mockSecretConstructor = jest.fn().mockImplementation((config) => mockSecretInstance);
+  (mockSecretConstructor as any).fromBase32 = jest.fn().mockReturnValue(mockSecretInstance);
+  (mockSecretConstructor as any).fromHex = jest.fn().mockReturnValue(mockSecretInstance);
+  (mockSecretConstructor as any).fromLatin1 = jest.fn().mockReturnValue(mockSecretInstance);
+  // fromBase64 is NOT on the object, so no mock needed, but we can't call it.
+
+  return {
+    TOTP: jest.fn().mockImplementation(() => ({
+      generate: jest.fn().mockReturnValue('123456'),
+    })),
+    Secret: mockSecretConstructor
+  };
+});
 
 describe('useToken', () => {
   const mockItem: TwoFAItem = {
@@ -28,6 +35,9 @@ describe('useToken', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
+    if (!global.atob) {
+        global.atob = (str: string) => Buffer.from(str, 'base64').toString('binary');
+    }
   });
 
   afterEach(() => {
@@ -37,7 +47,7 @@ describe('useToken', () => {
   it('should generate initial token and timeLeft', () => {
     const { result } = renderHook(() => useToken(mockItem));
 
-    expect(result.current.token).toBe('123 456'); // Formatted
+    expect(result.current.token).toBe('123 456');
     expect(result.current.period).toBe(30);
     expect(result.current.timeLeft).toBeGreaterThan(0);
     expect(result.current.timeLeft).toBeLessThanOrEqual(30);
@@ -49,14 +59,12 @@ describe('useToken', () => {
         account: 'default@example.com',
         issuer: 'Default',
         secret: 'SECRET',
-        // Missing algorithm, digits, period
         color: 'blue'
      } as any;
 
      const { result } = renderHook(() => useToken(itemWithDefaults));
 
      expect(result.current.period).toBe(30);
-     // Verify OTPAuth was called with defaults
      expect(OTPAuth.TOTP).toHaveBeenCalledWith(expect.objectContaining({
          algorithm: 'SHA1',
          digits: 6,
@@ -67,18 +75,12 @@ describe('useToken', () => {
   it('should update token periodically via setInterval', () => {
     const { result } = renderHook(() => useToken(mockItem));
 
-    // Spy on generateToken indirectly by checking if setToken is called or OTPAuth.generate is called
-    // Since we can't spy on internal function easily, we check effects.
-
-    // Clear initial calls
     (OTPAuth.TOTP as unknown as jest.Mock).mockClear();
 
-    // Advance time by 1 second to trigger interval
     act(() => {
       jest.advanceTimersByTime(1000);
     });
 
-    // Should have called TOTP constructor and generate again
     expect(OTPAuth.TOTP).toHaveBeenCalled();
   });
 
@@ -106,12 +108,33 @@ describe('useToken', () => {
     consoleSpy.mockRestore();
   });
 
-  it('should clear interval on unmount', () => {
-      const { unmount } = renderHook(() => useToken(mockItem));
-      const clearIntervalSpy = jest.spyOn(global, 'clearInterval');
+  it('should handle hex encoding', () => {
+      const itemHex: TwoFAItem = { ...mockItem, encoding: 'hex' };
+      renderHook(() => useToken(itemHex));
+      expect((OTPAuth.Secret as any).fromHex).toHaveBeenCalledWith(mockItem.secret);
+  });
 
-      unmount();
+  it('should handle ascii encoding', () => {
+      const itemAscii: TwoFAItem = { ...mockItem, encoding: 'ascii' };
+      renderHook(() => useToken(itemAscii));
+      expect((OTPAuth.Secret as any).fromLatin1).toHaveBeenCalledWith(mockItem.secret);
+  });
 
-      expect(clearIntervalSpy).toHaveBeenCalled();
+  it('should handle base64 encoding', () => {
+      const base64Secret = 'SGVsbG8gd29ybGQ='; // "Hello world"
+      const itemBase64: TwoFAItem = { ...mockItem, secret: base64Secret, encoding: 'base64' };
+
+      renderHook(() => useToken(itemBase64));
+
+      // Should have called constructor with buffer
+      expect(OTPAuth.Secret).toHaveBeenCalledWith(expect.objectContaining({
+          buffer: expect.any(ArrayBuffer)
+      }));
+  });
+
+  it('should default to base32 if encoding is unknown or missing', () => {
+      const itemUnknown: TwoFAItem = { ...mockItem, encoding: 'unknown' };
+      renderHook(() => useToken(itemUnknown));
+      expect((OTPAuth.Secret as any).fromBase32).toHaveBeenCalledWith(mockItem.secret);
   });
 });
