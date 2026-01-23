@@ -19,13 +19,41 @@ export const useToken = (item: TwoFAItem) => {
 
     const generateToken = () => {
         try {
+            let secret;
+            switch (item.encoding) {
+                case 'base64':
+                    // OTPAuth doesn't have fromBase64, convert manually
+                    try {
+                        const binary = atob(item.secret);
+                        const bytes = new Uint8Array(binary.length);
+                        for (let i = 0; i < binary.length; i++) {
+                            bytes[i] = binary.charCodeAt(i);
+                        }
+                        secret = new OTPAuth.Secret({ buffer: bytes.buffer });
+                    } catch (e) {
+                        console.error('Invalid Base64 secret', e);
+                        secret = new OTPAuth.Secret();
+                    }
+                    break;
+                case 'hex':
+                    secret = OTPAuth.Secret.fromHex(item.secret);
+                    break;
+                case 'ascii':
+                    secret = OTPAuth.Secret.fromLatin1(item.secret);
+                    break;
+                case 'base32':
+                default:
+                    secret = OTPAuth.Secret.fromBase32(item.secret);
+                    break;
+            }
+
             const totp = new OTPAuth.TOTP({
                 issuer: item.issuer,
                 label: item.account,
                 algorithm: (item.algorithm || 'SHA1').toUpperCase(),
                 digits: item.digits || 6,
                 period: item.period || 30,
-                secret: OTPAuth.Secret.fromBase32(item.secret),
+                secret: secret,
             });
 
             const newToken = totp.generate();
