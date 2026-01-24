@@ -14,6 +14,7 @@
     "build:main": "tsc --project tsconfig.json",
     "build:renderer": "webpack --config webpack.config.js --mode production",
     "start": "electron .",
+    "test": "jest",
     "electron:dev": "concurrently \"npm run build:main\" \"npm run dev:renderer\" \"wait-on http://localhost:3000 && electron . --serve\"",
     "electron:build": "npm run build && electron-builder"
   },
