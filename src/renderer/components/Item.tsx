@@ -134,33 +134,15 @@ const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, onMove, view
             className={`item ${viewMode}-item ${isDragging ? 'dragging' : ''} ${isDragEnabled ? 'draggable' : ''}`}
             onClick={copyToClipboard}
         >
-            {viewMode === 'list' && (
-                <>
-                 <div className="item-icon-container">
-                    {iconLetter}
-                 </div>
-                 <div className="item-content">
-                    <div className="item-header">
-                        <span className="item-issuer">{item.issuer}</span>
-                        <h3 className="item-account" title={item.account}>{item.account}</h3>
-                    </div>
-                 </div>
-                 </>
-            )}
-
-            {viewMode !== 'list' && (
-                <>
-                <div className="item-icon-container">
-                    {iconLetter}
+            <div className="item-icon-container">
+                {iconLetter}
+            </div>
+            <div className="item-header">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span className="item-issuer">{item.issuer}</span>
                 </div>
-                <div className="item-header">
-                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-                        <span className="item-issuer">{item.issuer}</span>
-                    </div>
-                    <h3 className="item-account" title={item.account}>{item.account}</h3>
-                </div>
-                </>
-            )}
+                <h3 className="item-account" title={item.account}>{item.account}</h3>
+            </div>
 
             <div className="token-display">
                 <span className="token">{token}</span>
