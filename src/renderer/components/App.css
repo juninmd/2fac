@@ -703,3 +703,24 @@ body {
     gap: 8px;
     margin-top: 10px;
 }
+
+/* Warning Box */
+.warning-box {
+    background: rgba(244, 67, 54, 0.1);
+    border: 1px solid var(--danger-color);
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 20px;
+}
+
+.warning-box strong {
+    color: var(--danger-color);
+    display: block;
+    margin-bottom: 5px;
+}
+
+.warning-box p {
+    font-size: 0.9rem;
+    margin: 0;
+    color: #ffcdd2;
+}

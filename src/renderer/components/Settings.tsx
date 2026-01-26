@@ -234,9 +234,17 @@ const Settings: React.FC<SettingsProps> = ({
 
                 {activeTab === 'data' && (
                     <div className="settings-section">
+                        <div className="warning-box">
+                            <strong>⚠️ Atenção: Não há backup na nuvem</strong>
+                            <p>
+                                Você é o único responsável pelos seus dados. Se perder o acesso a este computador, perderá seus tokens.
+                                Recomendamos criar backups criptografados regularmente e salvá-los em um local seguro externo (ex: pendrive).
+                            </p>
+                        </div>
+
                         <h3>Backups e Importação</h3>
                         <p style={{ color: '#aaa', fontSize: '0.9rem', marginBottom: '20px' }}>
-                            Como este aplicativo não utiliza nuvem, é sua responsabilidade manter backups dos seus dados.
+                            Gerencie seus dados locais.
                         </p>
 
                         <div className="data-actions-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
@@ -276,10 +284,10 @@ const Settings: React.FC<SettingsProps> = ({
                             <div className="card" style={{ background: '#333', padding: '15px', borderRadius: '4px' }}>
                                 <h4>Authy</h4>
                                 <p style={{ fontSize: '0.8rem', color: '#ccc', marginBottom: '10px' }}>
-                                    Importe dados de um backup exportado do Authy.
+                                    Importe dados de um backup exportado do Authy ou lista de URIs otpauth://.
                                 </p>
                                 <button className="btn btn-secondary" onClick={onImportAuthy}>
-                                    📱 Importar do Authy
+                                    📱 Importar do Authy / URIs
                                 </button>
                             </div>
                         </div>

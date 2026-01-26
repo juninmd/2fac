@@ -117,12 +117,16 @@ describe('Settings', () => {
     fireEvent.click(screen.getByText('Dados'));
 
     expect(screen.getByText('Backups e Importação')).toBeInTheDocument();
+    expect(screen.getByText('⚠️ Atenção: Não há backup na nuvem')).toBeInTheDocument();
 
     fireEvent.click(screen.getByText('🔒 Exportar Backup'));
     expect(mockOnExportEncrypted).toHaveBeenCalled();
 
     fireEvent.click(screen.getByText('📥 Exportar JSON'));
     expect(mockOnExport).toHaveBeenCalled();
+
+    fireEvent.click(screen.getByText('📱 Importar do Authy / URIs'));
+    expect(mockOnImportAuthy).toHaveBeenCalled();
   });
 
   it('calls onClose when close button is clicked', async () => {
