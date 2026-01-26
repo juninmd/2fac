@@ -34,7 +34,7 @@ jest.mock('./Settings', () => ({ onClose, onExport, onExportEncrypted, onImport,
     <button onClick={onExportEncrypted}>🔒 Exportar Backup</button>
     <button onClick={onImport}>📤 Importar JSON</button>
     <button onClick={onImportEncrypted}>🔓 Restaurar Backup</button>
-    <button onClick={onImportAuthy}>📱 Importar do Authy</button>
+    <button onClick={onImportAuthy}>📱 Importar do Authy / URIs</button>
   </div>
 ));
 jest.mock('./SidebarList', () => (props: any) => (
@@ -363,7 +363,7 @@ describe('App', () => {
         await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
         fireEvent.click(screen.getByTitle('Configurações'));
-        fireEvent.click(screen.getByText('📱 Importar do Authy'));
+        fireEvent.click(screen.getByText('📱 Importar do Authy / URIs'));
 
         await waitFor(() => {
             expect(mockImportAuthy).toHaveBeenCalled();
@@ -380,7 +380,7 @@ describe('App', () => {
         await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
         fireEvent.click(screen.getByTitle('Configurações'));
-        fireEvent.click(screen.getByText('📱 Importar do Authy'));
+        fireEvent.click(screen.getByText('📱 Importar do Authy / URIs'));
 
         await waitFor(() => {
             expect(window.alert).toHaveBeenCalledWith('Erro ao importar: File invalid');
@@ -397,7 +397,7 @@ describe('App', () => {
         await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
         fireEvent.click(screen.getByTitle('Configurações'));
-        fireEvent.click(screen.getByText('📱 Importar do Authy'));
+        fireEvent.click(screen.getByText('📱 Importar do Authy / URIs'));
 
         await waitFor(() => {
             expect(window.alert).toHaveBeenCalledWith('Erro ao importar Authy');

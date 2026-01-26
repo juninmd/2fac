@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import * as crypto from 'crypto';
 import Store from 'electron-store';
 import jsQR from 'jsqr';
+import * as OTPAuth from 'otpauth';
 
 const isDev = process.env.NODE_ENV === 'development';
 const store = new Store();
@@ -385,25 +386,24 @@ ipcMain.handle('import-2fa', async () => {
 
 ipcMain.handle('import-authy', async () => {
     const result = await dialog.showOpenDialog(mainWindow!, {
-        filters: [{ name: 'JSON Files', extensions: ['json'] }],
+        filters: [{ name: 'Backup Files', extensions: ['json', 'txt', 'uri'] }],
         properties: ['openFile'],
     });
 
     if (!result.canceled && result.filePaths[0]) {
         const filePath = result.filePaths[0];
         const fileContent = fs.readFileSync(filePath, 'utf-8');
+        let convertedItems: any[] = [];
 
+        // Try JSON first
         try {
-            // Handle both Authy export formats
             let authyData = JSON.parse(fileContent);
-
-            // Some Authy backups are encrypted or nested
             let entries = authyData.entries || authyData;
             if (!Array.isArray(entries)) {
                 entries = [authyData];
             }
 
-            const convertedItems = entries
+            convertedItems = entries
                 .filter((entry: any) => entry.secret)
                 .map((entry: any) => ({
                     id: Date.now().toString() + Math.random(),
@@ -415,19 +415,45 @@ ipcMain.handle('import-authy', async () => {
                     period: entry.period || 30,
                     type: entry.type || 'totp',
                 }));
+        } catch (e) {
+            // Not JSON, try line-by-line URI
+        }
 
-            if (convertedItems.length === 0) {
-                return { success: false, error: 'No valid 2FA entries found in file' };
+        // If JSON failed or returned nothing, try URIs
+        if (convertedItems.length === 0) {
+            const lines = fileContent.split(/\r?\n/);
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (trimmed.startsWith('otpauth://')) {
+                    try {
+                        const parsed = OTPAuth.URI.parse(trimmed);
+                        if (parsed) {
+                            convertedItems.push({
+                                id: Date.now().toString() + Math.random(),
+                                account: parsed.label || 'Unknown',
+                                issuer: parsed.issuer || 'Imported',
+                                secret: parsed.secret.base32,
+                                algorithm: parsed.algorithm || 'SHA1',
+                                digits: parsed.digits || 6,
+                                period: parsed instanceof OTPAuth.TOTP ? parsed.period : 30,
+                                type: 'totp'
+                            });
+                        }
+                    } catch (err) {
+                        console.error('Failed to parse URI:', trimmed);
+                    }
+                }
             }
+        }
 
+        if (convertedItems.length > 0) {
             const currentItems = store.get('twoFAItems', []) as any[];
             const allItems = [...currentItems, ...convertedItems];
             store.set('twoFAItems', allItems);
-
             return { success: true, count: convertedItems.length };
-        } catch (error) {
-            return { success: false, error: 'Failed to parse Authy file' };
         }
+
+        return { success: false, error: 'No valid 2FA entries found (JSON or URI)' };
     }
     return { success: false };
 });
