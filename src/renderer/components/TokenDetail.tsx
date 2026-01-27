@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { TwoFAItem } from '../types';
 import { useToken } from '../hooks/useToken';
 import { COLORS } from '../constants';
+import IssuerIcon from './IssuerIcon';
 
 interface TokenDetailProps {
     item: TwoFAItem;
@@ -45,8 +46,6 @@ const TokenDetail: React.FC<TokenDetailProps> = ({ item, onUpdate, onRemove }) =
     const strokeDashoffset = circumference - (timeLeft / period) * circumference;
     const isLowTime = timeLeft <= 5;
     const timerColor = isLowTime ? '#f44336' : (item.color || '#d32f2f');
-
-    const iconLetter = item.issuer ? item.issuer.charAt(0).toUpperCase() : '?';
 
     if (isEditing) {
         return (
@@ -105,7 +104,7 @@ const TokenDetail: React.FC<TokenDetailProps> = ({ item, onUpdate, onRemove }) =
         <div className="token-detail">
             <div className="detail-header">
                 <div className="detail-icon" style={{ backgroundColor: item.color || '#d32f2f' }}>
-                    {iconLetter}
+                    <IssuerIcon issuer={item.issuer} />
                 </div>
                 <div className="detail-info">
                     <h1 className="detail-issuer">{item.issuer}</h1>

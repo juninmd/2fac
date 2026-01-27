@@ -2,6 +2,7 @@ import React from 'react';
 import { TwoFAItem } from '../types';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import IssuerIcon from './IssuerIcon';
 
 interface SidebarListProps {
     items: TwoFAItem[];
@@ -36,8 +37,6 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ item, isSelected, onSelect, i
         zIndex: isDragging ? 999 : 'auto',
     } as React.CSSProperties;
 
-    const iconLetter = item.issuer ? item.issuer.charAt(0).toUpperCase() : '?';
-
     return (
         <div
             ref={setNodeRef}
@@ -48,7 +47,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ item, isSelected, onSelect, i
             onClick={onSelect}
         >
             <div className="item-icon-container small">
-                {iconLetter}
+                <IssuerIcon issuer={item.issuer} />
             </div>
             <div className="sidebar-item-info">
                 <span className="sidebar-item-issuer">{item.issuer}</span>

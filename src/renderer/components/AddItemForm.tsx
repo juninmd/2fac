@@ -79,6 +79,35 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd }) => {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
+
+        if (name === 'secret' && value.startsWith('otpauth://')) {
+            try {
+                const parsed = OTPAuth.URI.parse(value);
+                let secret = '';
+                if (parsed.secret) {
+                    secret = parsed.secret.base32;
+                }
+
+                if (parsed && secret) {
+                    setFormData(prev => ({
+                        ...prev,
+                        account: parsed.label || prev.account,
+                        issuer: parsed.issuer || prev.issuer,
+                        secret: secret,
+                        algorithm: (parsed.algorithm || 'SHA1') as any,
+                        digits: (parsed.digits || 6).toString(),
+                        period: (parsed instanceof OTPAuth.TOTP ? parsed.period : 30).toString(),
+                        encoding: 'base32',
+                        type: 'totp'
+                    }));
+                    setErrors({});
+                    return;
+                }
+            } catch (err) {
+                console.error('Failed to parse pasted URI', err);
+            }
+        }
+
         setFormData(prev => ({
             ...prev,
             [name]: value,
