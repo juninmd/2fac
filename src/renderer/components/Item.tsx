@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { TwoFAItem } from '../types';
 import { useToken } from '../hooks/useToken';
 import { COLORS } from '../constants';
+import IssuerIcon from './IssuerIcon';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
@@ -68,9 +69,6 @@ const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, onMove, view
         zIndex: isDragging ? 999 : 'auto',
     } as React.CSSProperties;
 
-    // First letter of issuer for icon
-    const iconLetter = item.issuer ? item.issuer.charAt(0).toUpperCase() : '?';
-
     if (isEditing) {
         return (
             <div
@@ -135,7 +133,7 @@ const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, onMove, view
             onClick={copyToClipboard}
         >
             <div className="item-icon-container">
-                {iconLetter}
+                <IssuerIcon issuer={item.issuer} />
             </div>
             <div className="item-header">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
