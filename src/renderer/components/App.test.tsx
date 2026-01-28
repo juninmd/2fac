@@ -41,6 +41,7 @@ jest.mock('./SidebarList', () => (props: any) => (
     <div data-testid="sidebar-list">
         <button onClick={() => props.onSelect('1')}>Select 1</button>
         <button onClick={() => props.onMove('1', 'up')}>Move Up 1</button>
+        <span data-testid="selected-id">{props.selectedItemId}</span>
     </div>
 ));
 jest.mock('./TokenDetail', () => (props: any) => (
@@ -544,5 +545,35 @@ describe('App', () => {
 
         // Select item in sidebar (using our mocked button)
         fireEvent.click(screen.getByText('Select 1'));
+    });
+
+    it('handles keyboard navigation in list view', async () => {
+        render(<App />);
+        fireEvent.click(screen.getByText('Unlock'));
+        await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
+
+        // Switch to list view
+        fireEvent.click(screen.getByTitle('Ver em Lista'));
+
+        await waitFor(() => {
+            expect(screen.getByTestId('sidebar-list')).toBeInTheDocument();
+        });
+
+        // Initially first item (id: '1') should be selected automatically by effect in App
+        await waitFor(() => {
+            expect(screen.getByTestId('selected-id')).toHaveTextContent('1');
+        });
+
+        // Arrow Down -> Select 2
+        fireEvent.keyDown(window, { key: 'ArrowDown' });
+        await waitFor(() => {
+            expect(screen.getByTestId('selected-id')).toHaveTextContent('2');
+        });
+
+        // Arrow Up -> Select 1
+        fireEvent.keyDown(window, { key: 'ArrowUp' });
+        await waitFor(() => {
+            expect(screen.getByTestId('selected-id')).toHaveTextContent('1');
+        });
     });
 });

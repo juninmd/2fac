@@ -22,11 +22,30 @@ const TokenDetail: React.FC<TokenDetailProps> = ({ item, onUpdate, onRemove }) =
     }, [item]);
 
     const copyToClipboard = () => {
-        const rawToken = token.replace(' ', '');
+        // Remove spaces for 6/7/8 digit formatting
+        const rawToken = token.replace(/\s/g, '');
         navigator.clipboard.writeText(rawToken);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
+
+    React.useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (isEditing) return;
+
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
+                const selection = window.getSelection();
+                // Only copy token if no text is selected
+                if (!selection || selection.toString().length === 0) {
+                    e.preventDefault();
+                    copyToClipboard();
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isEditing, token]);
 
     const handleEditSubmit = (e: React.FormEvent) => {
         e.preventDefault();

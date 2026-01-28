@@ -162,4 +162,27 @@ describe('TokenDetail', () => {
             color: expect.any(String)
         }));
     });
+
+    it('copies token on Ctrl+C', () => {
+        render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} />);
+
+        fireEvent.keyDown(window, { key: 'c', ctrlKey: true });
+
+        expect(navigator.clipboard.writeText).toHaveBeenCalledWith('123456');
+        expect(screen.getByText('Copiado!')).toBeInTheDocument();
+    });
+
+    it('does not copy on Ctrl+C if editing', () => {
+        render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} />);
+
+        // Enter edit mode
+        fireEvent.click(screen.getByText('✎ Editar'));
+
+        // Clear mocks
+        (navigator.clipboard.writeText as jest.Mock).mockClear();
+
+        fireEvent.keyDown(window, { key: 'c', ctrlKey: true });
+
+        expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+    });
 });

@@ -58,9 +58,13 @@ export const useToken = (item: TwoFAItem) => {
 
             const newToken = totp.generate();
 
-            // Format token with space in middle if 6 digits
+            // Format token with space
             if (newToken.length === 6) {
                 setToken(newToken.slice(0, 3) + ' ' + newToken.slice(3));
+            } else if (newToken.length === 7) {
+                setToken(newToken.slice(0, 3) + ' ' + newToken.slice(3));
+            } else if (newToken.length === 8) {
+                setToken(newToken.slice(0, 4) + ' ' + newToken.slice(4));
             } else {
                 setToken(newToken);
             }
