@@ -44,6 +44,9 @@ const App: React.FC = () => {
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
+            const activeElement = document.activeElement as HTMLElement;
+            const isInputFocused = activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA');
+
             if (e.ctrlKey || e.metaKey) {
                 if (e.key === 'f') {
                     e.preventDefault();
@@ -62,12 +65,29 @@ const App: React.FC = () => {
                 if (searchQuery) {
                     setSearchQuery('');
                 }
+            } else if (viewMode === 'list' && !isInputFocused && !showSettings && sidebarMode === 'none') {
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    const currentIndex = filteredItems.findIndex(item => item.id === selectedItemId);
+
+                    if (e.key === 'ArrowDown') {
+                        if (currentIndex < filteredItems.length - 1) {
+                            setSelectedItemId(filteredItems[currentIndex + 1].id);
+                        } else if (currentIndex === -1 && filteredItems.length > 0) {
+                             setSelectedItemId(filteredItems[0].id);
+                        }
+                    } else if (e.key === 'ArrowUp') {
+                        if (currentIndex > 0) {
+                            setSelectedItemId(filteredItems[currentIndex - 1].id);
+                        }
+                    }
+                }
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [sidebarMode, showSettings, searchQuery]);
+    }, [sidebarMode, showSettings, searchQuery, viewMode, filteredItems, selectedItemId]);
 
     useEffect(() => {
         loadSettings();
