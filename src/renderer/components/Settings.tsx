@@ -26,7 +26,7 @@ const Settings: React.FC<SettingsProps> = ({
         blurOnInactive: true
     });
 
-    const [activeTab, setActiveTab] = useState<'general' | 'security' | 'data' | 'about'>('general');
+    const [activeTab, setActiveTab] = useState<'general' | 'security' | 'data' | 'devices' | 'about'>('general');
 
     // Password Change State
     const [currentPassword, setCurrentPassword] = useState('');
@@ -101,6 +101,12 @@ const Settings: React.FC<SettingsProps> = ({
                 onClick={() => setActiveTab('data')}
             >
                 Dados
+            </button>
+            <button
+                className={`tab-btn ${activeTab === 'devices' ? 'active' : ''}`}
+                onClick={() => setActiveTab('devices')}
+            >
+                Dispositivos
             </button>
             <button
                 className={`tab-btn ${activeTab === 'about' ? 'active' : ''}`}
@@ -290,6 +296,37 @@ const Settings: React.FC<SettingsProps> = ({
                                     📱 Importar do Authy / URIs
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'devices' && (
+                    <div className="settings-section">
+                        <h3>Dispositivos</h3>
+                        <p style={{ color: '#aaa', fontSize: '0.9rem', marginBottom: '20px' }}>
+                            Gerenciamento de dispositivos e sincronização.
+                        </p>
+
+                        <div className="card" style={{ background: '#333', padding: '15px', borderRadius: '4px', marginBottom: '20px', borderLeft: '4px solid #4caf50' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div>
+                                    <h4 style={{ margin: '0 0 5px 0' }}>Este Dispositivo (Desktop)</h4>
+                                    <p style={{ fontSize: '0.8rem', color: '#ccc', margin: 0 }}>
+                                        Armazenamento Local • Ativo
+                                    </p>
+                                </div>
+                                <span style={{ fontSize: '1.5rem' }}>💻</span>
+                            </div>
+                        </div>
+
+                        <div className="warning-box">
+                            <strong>🚫 Sincronização Desativada</strong>
+                            <p>
+                                Este aplicativo opera exclusivamente offline. A sincronização em nuvem e o recurso de "Multi-Dispositivos" (Multi-Device) não estão disponíveis para garantir sua privacidade e segurança total.
+                            </p>
+                            <p style={{ marginTop: '10px' }}>
+                                Para usar seus tokens em outro dispositivo, utilize a função de Exportar/Importar na aba <strong>Dados</strong>.
+                            </p>
                         </div>
                     </div>
                 )}

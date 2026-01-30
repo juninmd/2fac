@@ -129,6 +129,17 @@ describe('Settings', () => {
     expect(mockOnImportAuthy).toHaveBeenCalled();
   });
 
+  it('switches to Devices tab and verifies local storage message', async () => {
+    render(<Settings {...defaultProps} />);
+    await waitFor(() => expect(mockGetSettings).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByText('Dispositivos'));
+
+    expect(screen.getByText('Este Dispositivo (Desktop)')).toBeInTheDocument();
+    expect(screen.getByText('🚫 Sincronização Desativada')).toBeInTheDocument();
+    expect(screen.getByText(/Este aplicativo opera exclusivamente offline/)).toBeInTheDocument();
+  });
+
   it('calls onClose when close button is clicked', async () => {
       render(<Settings {...defaultProps} />);
       await waitFor(() => expect(mockGetSettings).toHaveBeenCalled());
