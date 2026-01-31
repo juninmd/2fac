@@ -388,74 +388,104 @@ ipcMain.handle('import-2fa', async () => {
 
 ipcMain.handle('import-authy', async () => {
     const result = await dialog.showOpenDialog(mainWindow!, {
-        filters: [{ name: 'Backup Files', extensions: ['json', 'txt', 'uri'] }],
+        filters: [{ name: 'Arquivos de Backup', extensions: ['json', 'txt', 'uri'] }],
+        title: 'Importar de Authy ou Lista de URIs',
         properties: ['openFile'],
     });
 
     if (!result.canceled && result.filePaths[0]) {
-        const filePath = result.filePaths[0];
-        const fileContent = fs.readFileSync(filePath, 'utf-8');
-        let convertedItems: any[] = [];
-
-        // Try JSON first
         try {
-            let authyData = JSON.parse(fileContent);
-            let entries = authyData.entries || authyData;
-            if (!Array.isArray(entries)) {
-                entries = [authyData];
-            }
+            const filePath = result.filePaths[0];
+            const fileContent = fs.readFileSync(filePath, 'utf-8');
+            let importedCount = 0;
+            const currentItems = store.get('twoFAItems', []) as any[];
+            const existingSecrets = new Set(currentItems.map(i => i.secret));
+            const newItems: any[] = [];
 
-            convertedItems = entries
-                .filter((entry: any) => entry.secret)
-                .map((entry: any) => ({
+            // Function to normalize and add item if not duplicate
+            const addItem = (entry: any) => {
+                const secret = (entry.secret || entry.decrypted_seed || entry.seed || '').replace(/\s+/g, '').toUpperCase();
+                if (!secret) return;
+
+                // Avoid duplicates by secret
+                if (existingSecrets.has(secret)) return;
+
+                newItems.push({
                     id: Date.now().toString() + Math.random(),
-                    account: entry.name || entry.account || 'Unknown',
-                    issuer: entry.issuer || 'Imported',
-                    secret: entry.secret,
+                    account: entry.name || entry.account || entry.label || 'Conta Importada',
+                    issuer: entry.issuer || entry.provider || 'Authy/Importado',
+                    secret: secret,
                     algorithm: entry.algorithm || 'SHA1',
                     digits: entry.digits || 6,
                     period: entry.period || 30,
                     type: entry.type || 'totp',
-                }));
-        } catch (e) {
-            // Not JSON, try line-by-line URI
-        }
+                });
+                existingSecrets.add(secret);
+                importedCount++;
+            };
 
-        // If JSON failed or returned nothing, try URIs
-        if (convertedItems.length === 0) {
-            const lines = fileContent.split(/\r?\n/);
-            for (const line of lines) {
-                const trimmed = line.trim();
-                if (trimmed.startsWith('otpauth://')) {
-                    try {
-                        const parsed = OTPAuth.URI.parse(trimmed);
-                        if (parsed) {
-                            convertedItems.push({
-                                id: Date.now().toString() + Math.random(),
-                                account: parsed.label || 'Unknown',
-                                issuer: parsed.issuer || 'Imported',
-                                secret: parsed.secret.base32,
-                                algorithm: parsed.algorithm || 'SHA1',
-                                digits: parsed.digits || 6,
-                                period: parsed instanceof OTPAuth.TOTP ? parsed.period : 30,
-                                type: 'totp'
-                            });
+            // 1. Try JSON parsing
+            try {
+                const data = JSON.parse(fileContent);
+                let entries = [];
+
+                if (Array.isArray(data)) {
+                    entries = data;
+                } else if (data.entries && Array.isArray(data.entries)) {
+                    entries = data.entries;
+                } else if (data.tokens && Array.isArray(data.tokens)) {
+                    entries = data.tokens;
+                } else if (data.items && Array.isArray(data.items)) {
+                    entries = data.items;
+                } else {
+                    entries = [data]; // Single object
+                }
+
+                entries.forEach(addItem);
+            } catch (e) {
+                // Not a valid JSON or failed to parse, proceed to URI parsing
+            }
+
+            // 2. Try OTPAuth URI parsing (line by line)
+            if (newItems.length === 0) {
+                const lines = fileContent.split(/\r?\n/);
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (trimmed.startsWith('otpauth://')) {
+                        try {
+                            const parsed = OTPAuth.URI.parse(trimmed);
+                            if (parsed) {
+                                addItem({
+                                    account: parsed.label,
+                                    issuer: parsed.issuer,
+                                    secret: parsed.secret.base32,
+                                    algorithm: parsed.algorithm,
+                                    digits: parsed.digits,
+                                    period: parsed instanceof OTPAuth.TOTP ? (parsed as any).period : 30,
+                                    type: 'totp'
+                                });
+                            }
+                        } catch (err) {
+                            console.error('Falha ao processar URI:', trimmed);
                         }
-                    } catch (err) {
-                        console.error('Failed to parse URI:', trimmed);
+                    } else if (trimmed.length > 10 && !trimmed.includes(' ')) {
+                        // Maybe it's just a raw secret?
+                        addItem({ secret: trimmed });
                     }
                 }
             }
-        }
 
-        if (convertedItems.length > 0) {
-            const currentItems = store.get('twoFAItems', []) as any[];
-            const allItems = [...currentItems, ...convertedItems];
-            store.set('twoFAItems', allItems);
-            return { success: true, count: convertedItems.length };
-        }
+            if (newItems.length > 0) {
+                store.set('twoFAItems', [...currentItems, ...newItems]);
+                return { success: true, count: importedCount };
+            }
 
-        return { success: false, error: 'No valid 2FA entries found (JSON or URI)' };
+            return { success: false, error: 'Nenhum token válido encontrado no arquivo.' };
+
+        } catch (error: any) {
+            console.error('Erro na importação Authy:', error);
+            return { success: false, error: error.message };
+        }
     }
     return { success: false };
 });

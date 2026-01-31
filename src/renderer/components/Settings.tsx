@@ -118,39 +118,37 @@ const Settings: React.FC<SettingsProps> = ({
     );
 
     return (
-        <div className="settings-container" style={{ padding: '20px', color: 'white', display: 'flex', flexDirection: 'column', height: '100%' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h2 style={{ margin: 0 }}>Configurações</h2>
+        <div className="settings-container">
+            <div className="settings-header">
+                <h2>Configurações</h2>
                 <button className="btn-icon" onClick={onClose} title="Fechar">✕</button>
             </div>
 
             {renderTabs()}
 
-            <div className="settings-content" style={{ flex: 1, overflowY: 'auto', padding: '10px 0' }}>
+            <div className="settings-content">
 
                 {activeTab === 'general' && (
                     <div className="settings-section">
                         <h3>Comportamento</h3>
 
-                        <div className="setting-item" style={{ marginBottom: '15px' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                        <div className="setting-item">
+                            <label className="setting-label">
                                 <input
                                     type="checkbox"
                                     checked={settings.minimizeToTray}
                                     onChange={(e) => handleSettingChange('minimizeToTray', e.target.checked)}
-                                    style={{ marginRight: '10px' }}
                                 />
                                 Minimizar para a bandeja ao fechar
                             </label>
                         </div>
 
-                        <div className="setting-item" style={{ marginBottom: '15px' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                        <div className="setting-item">
+                            <label className="setting-label">
                                 <input
                                     type="checkbox"
                                     checked={settings.runOnStartup}
                                     onChange={(e) => handleSettingChange('runOnStartup', e.target.checked)}
-                                    style={{ marginRight: '10px' }}
                                 />
                                 Iniciar com o sistema
                             </label>
@@ -160,75 +158,74 @@ const Settings: React.FC<SettingsProps> = ({
 
                 {activeTab === 'security' && (
                     <div className="settings-section">
-                         <h3>Bloqueio e Privacidade</h3>
-                        <div className="setting-item" style={{ marginBottom: '15px' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                        <h3>Bloqueio e Privacidade</h3>
+                        <div className="setting-item">
+                            <label className="setting-label">
                                 <input
                                     type="checkbox"
                                     checked={settings.autoLock}
                                     onChange={(e) => handleSettingChange('autoLock', e.target.checked)}
-                                    style={{ marginRight: '10px' }}
                                 />
                                 Bloqueio automático por inatividade
                             </label>
                         </div>
 
                         {settings.autoLock && (
-                            <div className="setting-item" style={{ marginLeft: '25px', marginBottom: '15px' }}>
+                            <div className="setting-item" style={{ marginLeft: '25px' }}>
                                 <label>
                                     Tempo para bloqueio (minutos):
                                     <input
                                         type="number"
                                         min="1"
+                                        className="settings-input"
+                                        style={{ width: '80px', display: 'inline-block', marginLeft: '10px', marginTop: 0 }}
                                         value={settings.autoLockTimeout}
                                         onChange={(e) => handleSettingChange('autoLockTimeout', parseInt(e.target.value) || 1)}
-                                        style={{ marginLeft: '10px', width: '60px', padding: '5px', borderRadius: '4px', border: '1px solid #444', background: '#333', color: 'white' }}
                                     />
                                 </label>
                             </div>
                         )}
 
-                        <div className="setting-item" style={{ marginBottom: '15px' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                        <div className="setting-item">
+                            <label className="setting-label">
                                 <input
                                     type="checkbox"
                                     checked={settings.blurOnInactive}
                                     onChange={(e) => handleSettingChange('blurOnInactive', e.target.checked)}
-                                    style={{ marginRight: '10px' }}
                                 />
                                 Desfocar ao perder foco da janela
                             </label>
                         </div>
 
-                        <div style={{ borderTop: '1px solid #444', paddingTop: '20px', marginTop: '20px' }}>
+                        <div className="settings-section" style={{ borderTop: 'none', paddingTop: 0 }}>
                             <h3>Senha Mestre</h3>
                             <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '300px' }}>
                                 <input
                                     type="password"
+                                    className="settings-input"
                                     placeholder="Senha Atual"
                                     value={currentPassword}
                                     onChange={(e) => setCurrentPassword(e.target.value)}
-                                    style={{ padding: '8px', borderRadius: '4px', border: '1px solid #444', background: '#333', color: 'white' }}
                                 />
 
                                 <input
                                     type="password"
+                                    className="settings-input"
                                     placeholder="Nova Senha"
                                     value={newPassword}
                                     onChange={(e) => setNewPassword(e.target.value)}
-                                    style={{ padding: '8px', borderRadius: '4px', border: '1px solid #444', background: '#333', color: 'white' }}
                                 />
 
                                 <input
                                     type="password"
+                                    className="settings-input"
                                     placeholder="Confirmar Nova Senha"
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
-                                    style={{ padding: '8px', borderRadius: '4px', border: '1px solid #444', background: '#333', color: 'white' }}
                                 />
 
-                                {passwordError && <div style={{ color: '#ff6b6b', fontSize: '0.9rem' }}>{passwordError}</div>}
-                                {passwordMessage && <div style={{ color: '#51cf66', fontSize: '0.9rem' }}>{passwordMessage}</div>}
+                                {passwordError && <div className="error-message">{passwordError}</div>}
+                                {passwordMessage && <div className="success-message" style={{ color: 'var(--success-color)', fontSize: '0.9rem' }}>{passwordMessage}</div>}
 
                                 <button type="submit" className="btn btn-primary" disabled={!currentPassword || !newPassword}>
                                     Atualizar Senha
@@ -249,47 +246,47 @@ const Settings: React.FC<SettingsProps> = ({
                         </div>
 
                         <h3>Backups e Importação</h3>
-                        <p style={{ color: '#aaa', fontSize: '0.9rem', marginBottom: '20px' }}>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '20px' }}>
                             Gerencie seus dados locais.
                         </p>
 
                         <div className="data-actions-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                            <div className="card" style={{ background: '#333', padding: '15px', borderRadius: '4px' }}>
+                            <div className="settings-card">
                                 <h4>Criptografado (Recomendado)</h4>
-                                <p style={{ fontSize: '0.8rem', color: '#ccc', marginBottom: '10px' }}>
+                                <p>
                                     Backup protegido por senha. Seguro para armazenar.
                                 </p>
-                                <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
-                                    <button className="btn btn-primary" onClick={onExportEncrypted}>
+                                <div className="settings-actions" style={{ flexDirection: 'column' }}>
+                                    <button className="btn btn-primary full-width" onClick={onExportEncrypted}>
                                         🔒 Exportar Backup
                                     </button>
-                                    <button className="btn btn-secondary" onClick={onImportEncrypted}>
+                                    <button className="btn btn-secondary full-width" onClick={onImportEncrypted}>
                                         🔓 Restaurar Backup
                                     </button>
                                 </div>
                             </div>
 
-                            <div className="card" style={{ background: '#333', padding: '15px', borderRadius: '4px' }}>
+                            <div className="settings-card">
                                 <h4>Texto Plano (Inseguro)</h4>
-                                <p style={{ fontSize: '0.8rem', color: '#ccc', marginBottom: '10px' }}>
+                                <p>
                                     Arquivo JSON legível. <strong>Não compartilhe.</strong>
                                 </p>
-                                <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
-                                    <button className="btn btn-secondary" style={{ opacity: 0.8 }} onClick={onExport}>
+                                <div className="settings-actions" style={{ flexDirection: 'column' }}>
+                                    <button className="btn btn-secondary full-width" style={{ opacity: 0.8 }} onClick={onExport}>
                                         📥 Exportar JSON
                                     </button>
-                                    <button className="btn btn-secondary" style={{ opacity: 0.8 }} onClick={onImport}>
+                                    <button className="btn btn-secondary full-width" style={{ opacity: 0.8 }} onClick={onImport}>
                                         📤 Importar JSON
                                     </button>
                                 </div>
                             </div>
                         </div>
 
-                        <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #444' }}>
+                        <div className="settings-section" style={{ borderTop: 'none', paddingTop: 0, marginTop: '20px' }}>
                             <h3>Migração</h3>
-                            <div className="card" style={{ background: '#333', padding: '15px', borderRadius: '4px' }}>
+                            <div className="settings-card">
                                 <h4>Authy</h4>
-                                <p style={{ fontSize: '0.8rem', color: '#ccc', marginBottom: '10px' }}>
+                                <p>
                                     Importe dados de um backup exportado do Authy ou lista de URIs otpauth://.
                                 </p>
                                 <button className="btn btn-secondary" onClick={onImportAuthy}>
@@ -303,15 +300,15 @@ const Settings: React.FC<SettingsProps> = ({
                 {activeTab === 'devices' && (
                     <div className="settings-section">
                         <h3>Dispositivos</h3>
-                        <p style={{ color: '#aaa', fontSize: '0.9rem', marginBottom: '20px' }}>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '20px' }}>
                             Gerenciamento de dispositivos e sincronização.
                         </p>
 
-                        <div className="card" style={{ background: '#333', padding: '15px', borderRadius: '4px', marginBottom: '20px', borderLeft: '4px solid #4caf50' }}>
+                        <div className="settings-card" style={{ borderLeft: '4px solid var(--success-color)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div>
                                     <h4 style={{ margin: '0 0 5px 0' }}>Este Dispositivo (Desktop)</h4>
-                                    <p style={{ fontSize: '0.8rem', color: '#ccc', margin: 0 }}>
+                                    <p style={{ margin: 0 }}>
                                         Armazenamento Local • Ativo
                                     </p>
                                 </div>
@@ -338,7 +335,7 @@ const Settings: React.FC<SettingsProps> = ({
                         <p style={{ marginTop: '10px' }}>
                             Um autenticador de desktop focado em privacidade e segurança local.
                         </p>
-                        <ul style={{ marginTop: '10px', paddingLeft: '20px', color: '#ccc' }}>
+                        <ul style={{ marginTop: '10px', paddingLeft: '20px', color: 'var(--text-secondary)' }}>
                             <li>Armazenamento 100% Local</li>
                             <li>Criptografia AES-256</li>
                             <li>Sem rastreamento ou nuvem</li>
@@ -348,7 +345,7 @@ const Settings: React.FC<SettingsProps> = ({
                 )}
             </div>
 
-            <div style={{ paddingTop: '10px', borderTop: '1px solid #444', display: 'flex', justifyContent: 'flex-end' }}>
+            <div className="settings-footer">
                 <button className="btn btn-secondary" onClick={onClose}>
                     Fechar
                 </button>

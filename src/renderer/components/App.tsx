@@ -37,8 +37,8 @@ const App: React.FC = () => {
         window.addEventListener('focus', handleFocus);
         window.addEventListener('blur', handleBlur);
         return () => {
-             window.removeEventListener('focus', handleFocus);
-             window.removeEventListener('blur', handleBlur);
+            window.removeEventListener('focus', handleFocus);
+            window.removeEventListener('blur', handleBlur);
         };
     }, []);
 
@@ -74,7 +74,7 @@ const App: React.FC = () => {
                         if (currentIndex < filteredItems.length - 1) {
                             setSelectedItemId(filteredItems[currentIndex + 1].id);
                         } else if (currentIndex === -1 && filteredItems.length > 0) {
-                             setSelectedItemId(filteredItems[0].id);
+                            setSelectedItemId(filteredItems[0].id);
                         }
                     } else if (e.key === 'ArrowUp') {
                         if (currentIndex > 0) {
@@ -321,7 +321,7 @@ const App: React.FC = () => {
             <header className="app-header">
                 <div className="header-left">
                     <h1>
-                        <span style={{ fontSize: '24px' }}>🔐</span> 2FAC
+                        <span className="app-logo-icon">🔐</span> 2FAC
                     </h1>
                 </div>
 
