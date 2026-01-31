@@ -78,6 +78,7 @@ const mockExport2FAEncrypted = jest.fn();
 const mockImport2FA = jest.fn();
 const mockImport2FAEncrypted = jest.fn();
 const mockImportAuthy = jest.fn();
+const mockOnProtocolUrl = jest.fn(() => jest.fn());
 
 beforeAll(() => {
   (window as any).electron = {
@@ -92,6 +93,7 @@ beforeAll(() => {
     import2FA: mockImport2FA,
     import2FAEncrypted: mockImport2FAEncrypted,
     importAuthy: mockImportAuthy,
+    onProtocolUrl: mockOnProtocolUrl,
   };
 });
 

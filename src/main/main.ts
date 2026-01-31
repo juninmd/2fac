@@ -13,6 +13,7 @@ const store = new Store();
 let mainWindow: BrowserWindow | null;
 let tray: Tray | null = null;
 let isQuitting = false;
+let initialProtocolUrl: string | null = null;
 
 const createTray = () => {
     if (tray) return;
@@ -79,6 +80,13 @@ const createWindow = () => {
 
     mainWindow.loadURL(startUrl);
 
+    mainWindow.webContents.on('did-finish-load', () => {
+        if (initialProtocolUrl) {
+            mainWindow?.webContents.send('on-protocol-url', initialProtocolUrl);
+            initialProtocolUrl = null;
+        }
+    });
+
     // Force DevTools for debugging white screen
     mainWindow.webContents.openDevTools();
     console.log('isDev:', isDev);
@@ -99,16 +107,65 @@ const createWindow = () => {
     });
 };
 
-app.on('ready', () => {
-    createWindow();
-    createTray();
+const gotTheLock = app.requestSingleInstanceLock();
 
-    // Apply startup settings
-    const settings: any = store.get('appSettings') || {};
-    app.setLoginItemSettings({
-        openAtLogin: !!settings.runOnStartup,
-        openAsHidden: !!settings.minimizeToTray
+if (!gotTheLock) {
+    app.quit();
+} else {
+    app.on('second-instance', (_event, commandLine, _workingDirectory) => {
+        // Someone tried to run a second instance, we should focus our window.
+        if (mainWindow) {
+            if (mainWindow.isMinimized()) mainWindow.restore();
+            mainWindow.show();
+            mainWindow.focus();
+
+            // Find otpauth:// argument
+            const url = commandLine.find(arg => arg.startsWith('otpauth://'));
+            if (url) {
+                mainWindow.webContents.send('on-protocol-url', url);
+            }
+        }
     });
+
+    app.on('ready', () => {
+        // Check for cold start URL on Windows/Linux
+        if (process.platform !== 'darwin') {
+            const urlArg = process.argv.find(arg => arg.startsWith('otpauth://'));
+            if (urlArg) {
+                initialProtocolUrl = urlArg;
+            }
+        }
+
+        createWindow();
+        createTray();
+
+        if (process.defaultApp) {
+            if (process.argv.length >= 2) {
+                app.setAsDefaultProtocolClient('otpauth', process.execPath, [path.resolve(process.argv[1])]);
+            }
+        } else {
+            app.setAsDefaultProtocolClient('otpauth');
+        }
+
+        // Apply startup settings
+        const settings: any = store.get('appSettings') || {};
+        app.setLoginItemSettings({
+            openAtLogin: !!settings.runOnStartup,
+            openAsHidden: !!settings.minimizeToTray
+        });
+    });
+}
+
+app.on('open-url', (event, url) => {
+    event.preventDefault();
+    if (mainWindow) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.show();
+        mainWindow.focus();
+        mainWindow.webContents.send('on-protocol-url', url);
+    } else {
+        initialProtocolUrl = url;
+    }
 });
 
 app.on('before-quit', () => {
