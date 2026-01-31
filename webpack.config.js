@@ -1,3 +1,4 @@
+const webpack = require('webpack');
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
@@ -30,6 +31,7 @@ module.exports = {
             url: require.resolve('url/'),
             buffer: require.resolve('buffer/'),
             vm: require.resolve('vm-browserify'),
+            process: require.resolve('process/browser'),
         },
     },
     devServer: {
@@ -41,7 +43,7 @@ module.exports = {
         new HtmlWebpackPlugin({
             template: './public/index.html',
         }),
-        new (require('webpack').ProvidePlugin)({
+        new webpack.ProvidePlugin({
             Buffer: ['buffer', 'Buffer'],
             process: 'process/browser',
         }),

@@ -6,7 +6,8 @@ import Store from 'electron-store';
 import jsQR from 'jsqr';
 import * as OTPAuth from 'otpauth';
 
-const isDev = process.env.NODE_ENV === 'development';
+const isDev = process.env.NODE_ENV === 'development' || true; // Force dev for debugging
+app.disableHardwareAcceleration();
 const store = new Store();
 
 let mainWindow: BrowserWindow | null;
@@ -78,9 +79,10 @@ const createWindow = () => {
 
     mainWindow.loadURL(startUrl);
 
-    if (isDev) {
-        mainWindow.webContents.openDevTools();
-    }
+    // Force DevTools for debugging white screen
+    mainWindow.webContents.openDevTools();
+    console.log('isDev:', isDev);
+
 
     mainWindow.on('close', (event) => {
         const settings: any = store.get('appSettings') || {};
@@ -240,7 +242,7 @@ ipcMain.handle('import-2fa-encrypted', async (_event, password) => {
             }
 
             if (!backupData.version || !backupData.salt || !backupData.iv || !backupData.authTag || !backupData.data) {
-                 return { success: false, error: 'Invalid backup file structure' };
+                return { success: false, error: 'Invalid backup file structure' };
             }
 
             const algorithm = 'aes-256-gcm';
@@ -261,7 +263,7 @@ ipcMain.handle('import-2fa-encrypted', async (_event, password) => {
             // Assign new IDs to imported items to avoid collisions?
             // Or keep IDs if they are backups. Authy restore keeps context.
             // Let's regenerate IDs to be safe against duplicates if we are merging.
-             const itemsWithIds = importedItems.map((item: any) => ({
+            const itemsWithIds = importedItems.map((item: any) => ({
                 ...item,
                 id: Date.now().toString() + Math.random(),
             }));
@@ -276,7 +278,7 @@ ipcMain.handle('import-2fa-encrypted', async (_event, password) => {
             console.error('Import decryption error:', error);
             // Distinguish between bad password and other errors if possible
             if (error.message.includes('auth tag')) {
-                 return { success: false, error: 'Senha incorreta ou arquivo corrompido' };
+                return { success: false, error: 'Senha incorreta ou arquivo corrompido' };
             }
             return { success: false, error: error.message };
         }
