@@ -5,9 +5,10 @@ import { COLORS } from '../constants';
 
 interface AddItemFormProps {
     onAdd: (item: Omit<TwoFAItem, 'id'>) => void;
+    initialUri?: string;
 }
 
-const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd }) => {
+const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd, initialUri }) => {
     const [isScanning, setIsScanning] = useState(false);
     const [formData, setFormData] = useState({
         account: '',
@@ -23,6 +24,35 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd }) => {
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
+
+    React.useEffect(() => {
+        if (initialUri && initialUri.startsWith('otpauth://')) {
+            try {
+                const parsed = OTPAuth.URI.parse(initialUri);
+                let secret = '';
+                if (parsed.secret) {
+                    secret = parsed.secret.base32;
+                }
+
+                if (parsed && secret) {
+                    setFormData(prev => ({
+                        ...prev,
+                        account: parsed.label || prev.account,
+                        issuer: parsed.issuer || prev.issuer,
+                        secret: secret,
+                        algorithm: (parsed.algorithm || 'SHA1') as any,
+                        digits: (parsed.digits || 6).toString(),
+                        period: (parsed instanceof OTPAuth.TOTP ? parsed.period : 30).toString(),
+                        encoding: 'base32',
+                        type: 'totp'
+                    }));
+                    setErrors({});
+                }
+            } catch (err) {
+                console.error('Failed to parse initial URI', err);
+            }
+        }
+    }, [initialUri]);
 
     const validateForm = () => {
         const newErrors: Record<string, string> = {};

@@ -17,5 +17,10 @@ contextBridge.exposeInMainWorld('electron', {
     set2FAItems: (items: any[]) => ipcRenderer.invoke('set-2fa-items', items),
     getSettings: () => ipcRenderer.invoke('get-settings'),
     setSettings: (settings: any) => ipcRenderer.invoke('set-settings', settings),
+    onProtocolUrl: (callback: (url: string) => void) => {
+        const subscription = (_: any, url: string) => callback(url);
+        ipcRenderer.on('on-protocol-url', subscription);
+        return () => ipcRenderer.removeListener('on-protocol-url', subscription);
+    },
 });
 

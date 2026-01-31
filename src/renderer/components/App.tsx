@@ -22,6 +22,7 @@ const App: React.FC = () => {
     const [showSettings, setShowSettings] = useState(false);
     const [settings, setSettings] = useState<any>(null);
     const [isWindowFocused, setIsWindowFocused] = useState(true);
+    const [pendingUri, setPendingUri] = useState<string | null>(null);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -40,6 +41,14 @@ const App: React.FC = () => {
             window.removeEventListener('focus', handleFocus);
             window.removeEventListener('blur', handleBlur);
         };
+    }, []);
+
+    useEffect(() => {
+        const unsubscribe = window.electron.onProtocolUrl((url) => {
+            setPendingUri(url);
+            setSidebarMode('add');
+        });
+        return unsubscribe;
     }, []);
 
     useEffect(() => {
@@ -380,10 +389,14 @@ const App: React.FC = () => {
                     <div className="sidebar">
                         <div className="sidebar-section">
                             <h3>Adicionar Conta</h3>
-                            <AddItemForm onAdd={(item) => {
-                                handleAddItem(item);
-                                setSidebarMode('none');
-                            }} />
+                            <AddItemForm
+                                initialUri={pendingUri || undefined}
+                                onAdd={(item) => {
+                                    handleAddItem(item);
+                                    setSidebarMode('none');
+                                    setPendingUri(null);
+                                }}
+                            />
                         </div>
                     </div>
                 )}
