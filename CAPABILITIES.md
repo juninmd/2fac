@@ -59,6 +59,13 @@ O **2FAC** é um gerenciador de autenticação de dois fatores (2FA) para deskto
 - **Comportamento de Fechamento:** Minimizar para tray ao fechar janela.
 - **Scan de QR Code:** Capacidade de escanear a tela (desktop) em busca de QR codes para adicionar contas automaticamente (implementado via `desktopCapturer` no main process).
 
+### Atalhos de Teclado
+- **Ctrl+F / Cmd+F:** Focar na barra de busca.
+- **Ctrl+L / Cmd+L:** Bloquear o aplicativo.
+- **Ctrl+N / Cmd+N:** Abrir/Fechar painel de adicionar conta.
+- **Ctrl+, / Cmd+,:** Abrir Configurações.
+- **Esc:** Fechar modais/limpar busca.
+
 ## 4. API Interna (IPC)
 As seguintes funções estão disponíveis na ponte `window.electron`:
 
