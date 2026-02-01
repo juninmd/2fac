@@ -63,6 +63,12 @@ const App: React.FC = () => {
                 } else if (e.key === 'l') {
                     e.preventDefault();
                     setIsLocked(true);
+                } else if (e.key === 'n') {
+                    e.preventDefault();
+                    setSidebarMode(prev => prev === 'add' ? 'none' : 'add');
+                } else if (e.key === ',') {
+                    e.preventDefault();
+                    setShowSettings(true);
                 }
             } else if (e.key === 'Escape') {
                 if (sidebarMode !== 'none') {

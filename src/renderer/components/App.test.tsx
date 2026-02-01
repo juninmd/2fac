@@ -578,4 +578,27 @@ describe('App', () => {
             expect(screen.getByTestId('selected-id')).toHaveTextContent('1');
         });
     });
+
+    it('handles global shortcuts', async () => {
+        render(<App />);
+        fireEvent.click(screen.getByText('Unlock'));
+        await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
+
+        // Ctrl+N -> Toggle Sidebar
+        fireEvent.keyDown(window, { key: 'n', ctrlKey: true });
+        await waitFor(() => {
+            expect(screen.getByTestId('add-item-form')).toBeInTheDocument();
+        });
+
+        fireEvent.keyDown(window, { key: 'n', ctrlKey: true });
+        await waitFor(() => {
+            expect(screen.queryByTestId('add-item-form')).not.toBeInTheDocument();
+        });
+
+        // Ctrl+, -> Open Settings
+        fireEvent.keyDown(window, { key: ',', ctrlKey: true });
+        await waitFor(() => {
+            expect(screen.getByTestId('settings')).toBeInTheDocument();
+        });
+    });
 });
