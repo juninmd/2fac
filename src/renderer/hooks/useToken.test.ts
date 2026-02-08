@@ -5,12 +5,13 @@ import * as OTPAuth from 'otpauth';
 
 // Mock otpauth
 jest.mock('otpauth', () => {
+    const Secret = jest.fn();
+    (Secret as any).fromBase32 = jest.fn();
+    (Secret as any).fromHex = jest.fn();
+    (Secret as any).fromLatin1 = jest.fn();
+
     return {
-        Secret: {
-            fromBase32: jest.fn(),
-            fromHex: jest.fn(),
-            fromLatin1: jest.fn(),
-        },
+        Secret: Secret,
         TOTP: jest.fn().mockImplementation(() => ({
             generate: jest.fn()
         }))
@@ -78,5 +79,40 @@ describe('useToken', () => {
         const { result } = renderHook(() => useToken(item5));
 
         expect(result.current.token).toBe('12345');
+    });
+
+    it('handles base64 encoded secret correctly', () => {
+        // Mock valid base64
+        const base64Secret = 'SGVsbG8='; // "Hello"
+        const itemBase64: TwoFAItem = { ...mockItem, encoding: 'base64', secret: base64Secret };
+
+        // We expect OTPAuth.Secret constructor to be called
+        const { result } = renderHook(() => useToken(itemBase64));
+
+        expect(OTPAuth.Secret).toHaveBeenCalled();
+        // Verify token is generated (mocked return value)
+        expect(result.current.token).toBe('123 456');
+    });
+
+    it('handles invalid base64 gracefully', () => {
+        // Mock invalid base64 (not divisible by 4 or invalid chars, though atob is lenient in some envs)
+        // But here we rely on atob throwing or returning something.
+        // Let's force atob to throw if possible, or just check that it doesn't crash app
+
+        // Mock atob to throw error for this test
+        const originalAtob = window.atob;
+        window.atob = jest.fn().mockImplementation(() => { throw new Error('Invalid Base64'); });
+
+        const itemInvalid = { ...mockItem, encoding: 'base64', secret: 'INVALID!!!' };
+
+        console.error = jest.fn(); // Suppress error log
+
+        const { result } = renderHook(() => useToken(itemInvalid as any));
+
+        // Should fall back to empty Secret() call in catch block
+        expect(OTPAuth.Secret).toHaveBeenCalled();
+        expect(console.error).toHaveBeenCalledWith('Invalid Base64 secret', expect.any(Error));
+
+        window.atob = originalAtob;
     });
 });
