@@ -341,6 +341,15 @@ const Settings: React.FC<SettingsProps> = ({
                             <li>Sem rastreamento ou nuvem</li>
                             <li>Código Aberto</li>
                         </ul>
+
+                        <h4 style={{ marginTop: '20px' }}>Atalhos de Teclado</h4>
+                        <ul style={{ paddingLeft: '20px', color: 'var(--text-secondary)' }}>
+                            <li><strong>Ctrl/Cmd + F:</strong> Buscar Conta</li>
+                            <li><strong>Ctrl/Cmd + N:</strong> Adicionar Conta</li>
+                            <li><strong>Ctrl/Cmd + ,:</strong> Configurações</li>
+                            <li><strong>Ctrl/Cmd + L:</strong> Bloquear App</li>
+                            <li><strong>Esc:</strong> Fechar / Limpar Busca</li>
+                        </ul>
                     </div>
                 )}
             </div>
