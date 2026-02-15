@@ -1,13 +1,17 @@
 from playwright.sync_api import Page, expect, sync_playwright
 
 def test_verify_icons(page: Page):
+    page.on("console", lambda msg: print(f"PAGE LOG: {msg.text}"))
+    page.on("pageerror", lambda err: print(f"PAGE ERROR: {err}"))
+
     # Mock window.electron
     page.add_init_script("""
         window.electron = {
             get2FAItems: () => Promise.resolve([
                 { id: '1', account: 'john@google.com', issuer: 'Google', secret: 'JBSWY3DPEHPK3PXP', color: '#e23e3e' },
                 { id: '2', account: 'jane@facebook.com', issuer: 'Facebook', secret: 'JBSWY3DPEHPK3PXP', color: '#4267B2' },
-                { id: '3', account: 'bob@unknown.com', issuer: 'UnknownService', secret: 'JBSWY3DPEHPK3PXP', color: '#000000' }
+                { id: '3', account: 'bob@unknown.com', issuer: 'UnknownService', secret: 'JBSWY3DPEHPK3PXP', color: '#000000' },
+                { id: '4', account: 'me@paypal.com', issuer: 'PayPal', secret: 'JBSWY3DPEHPK3PXP', color: '#003087' }
             ]),
             getSettings: () => Promise.resolve({ autoLock: false, blurOnInactive: false }),
             add2FAItem: () => Promise.resolve({}),
@@ -17,6 +21,7 @@ def test_verify_icons(page: Page):
             scanScreenQR: () => Promise.resolve({ success: false }),
             checkMasterPassword: (pwd) => Promise.resolve(true),
             hasMasterPassword: () => Promise.resolve(true),
+            onProtocolUrl: (cb) => { return () => {}; }
         };
     """)
 
@@ -49,8 +54,13 @@ def test_verify_icons(page: Page):
     expect(unknown_card.locator(".item-icon-container")).to_have_text("U")
     expect(unknown_card.locator(".item-icon-container svg")).not_to_be_visible()
 
+    # PayPal item (New)
+    paypal_card = page.locator(".item.grid-item", has_text="PayPal")
+    expect(paypal_card).to_be_visible()
+    expect(paypal_card.locator(".item-icon-container svg")).to_be_visible()
+
     # Take screenshot
-    page.screenshot(path="/home/jules/verification/verification.png")
+    page.screenshot(path="verification.png")
 
 if __name__ == "__main__":
     with sync_playwright() as p:
@@ -61,6 +71,6 @@ if __name__ == "__main__":
             print("Verification successful")
         except Exception as e:
             print(f"Verification failed: {e}")
-            page.screenshot(path="/home/jules/verification/verification_failed.png")
+            page.screenshot(path="verification_failed.png")
         finally:
             browser.close()
