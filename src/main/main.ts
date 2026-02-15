@@ -91,6 +91,8 @@ const createWindow = () => {
     mainWindow.webContents.openDevTools();
     console.log('isDev:', isDev);
 
+    // Prevent screen capture for security (mimic Authy behavior)
+    mainWindow.setContentProtection(true);
 
     mainWindow.on('close', (event) => {
         const settings: any = store.get('appSettings') || {};
