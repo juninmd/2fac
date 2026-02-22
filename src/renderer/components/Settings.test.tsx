@@ -32,6 +32,7 @@ describe('Settings', () => {
       onImport: mockOnImport,
       onImportEncrypted: mockOnImportEncrypted,
       onImportAuthy: mockOnImportAuthy,
+      itemsCount: 5,
   };
 
   beforeEach(() => {

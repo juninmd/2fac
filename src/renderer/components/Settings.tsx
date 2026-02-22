@@ -8,6 +8,7 @@ interface SettingsProps {
     onImport: () => void;
     onImportEncrypted: () => void;
     onImportAuthy: () => void;
+    itemsCount: number;
 }
 
 const Settings: React.FC<SettingsProps> = ({
@@ -16,7 +17,8 @@ const Settings: React.FC<SettingsProps> = ({
     onExportEncrypted,
     onImport,
     onImportEncrypted,
-    onImportAuthy
+    onImportAuthy,
+    itemsCount
 }) => {
     const [settings, setSettings] = useState<AppSettings>({
         minimizeToTray: false,
@@ -332,6 +334,7 @@ const Settings: React.FC<SettingsProps> = ({
                     <div className="settings-section">
                         <h3>Sobre o 2FAC</h3>
                         <p>Versão 1.0.0</p>
+                        <p><strong>Contas Protegidas:</strong> {itemsCount}</p>
                         <p style={{ marginTop: '10px' }}>
                             Uma alternativa segura e offline ao Authy Desktop, focada em privacidade e soberania dos seus dados.
                         </p>
