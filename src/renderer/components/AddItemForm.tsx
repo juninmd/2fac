@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import * as OTPAuth from 'otpauth';
 import { TwoFAItem } from '../types';
 import { COLORS } from '../constants';
+import { getBrandColor } from '../utils/brandUtils';
+import IssuerIcon from './IssuerIcon';
 
 interface AddItemFormProps {
     onAdd: (item: Omit<TwoFAItem, 'id'>) => void;
@@ -24,6 +26,14 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd, initialUri }) => {
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
+
+    // Auto-select color when issuer changes
+    React.useEffect(() => {
+        const brandColor = getBrandColor(formData.issuer);
+        if (brandColor) {
+            setFormData(prev => ({ ...prev, color: brandColor }));
+        }
+    }, [formData.issuer]);
 
     React.useEffect(() => {
         if (initialUri && initialUri.startsWith('otpauth://')) {
@@ -232,15 +242,35 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd, initialUri }) => {
 
             <div className="form-group">
                 <label htmlFor="issuer">Emissor (Serviço) *</label>
-                <input
-                    type="text"
-                    id="issuer"
-                    name="issuer"
-                    value={formData.issuer}
-                    onChange={handleChange}
-                    placeholder="ex: Google, GitHub"
-                    className={errors.issuer ? 'error' : ''}
-                />
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <div style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '8px',
+                        backgroundColor: formData.color,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        flexShrink: 0,
+                        fontSize: '1.2rem',
+                        fontWeight: 'bold',
+                        transition: 'background-color 0.2s',
+                        border: '1px solid var(--border-color)'
+                    }}>
+                        <IssuerIcon issuer={formData.issuer} />
+                    </div>
+                    <input
+                        type="text"
+                        id="issuer"
+                        name="issuer"
+                        value={formData.issuer}
+                        onChange={handleChange}
+                        placeholder="ex: Google, GitHub"
+                        className={errors.issuer ? 'error' : ''}
+                        style={{ flex: 1 }}
+                    />
+                </div>
                 {errors.issuer && <span className="error-message">{errors.issuer}</span>}
             </div>
 

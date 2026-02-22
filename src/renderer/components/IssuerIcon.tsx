@@ -1,4 +1,5 @@
 import React from 'react';
+import { getBrandKey } from '../utils/brandUtils';
 
 const ICONS: Record<string, JSX.Element> = {
     // Google (G)
@@ -73,6 +74,15 @@ const ICONS: Record<string, JSX.Element> = {
     // Blockchain
     'blockchain': <path d="M20.2 14.6l-5.6-3.3c-.9-.5-.9-1.8 0-2.3l5.6-3.3c.9-.5 2-.5 2.9 0l.9.5v8l-.9.5c-.9.5-2 .5-2.9 0zM3.8 9.4l5.6 3.3c.9.5.9 1.8 0 2.3l-5.6 3.3c-.9.5-2 .5-2.9 0l-.9-.5v-8l.9-.5c.9-.5 2-.5 2.9 0zm9.7 7.7l-5.6 3.3c-.9.5-2 .5-2.9 0l-5-2.9c-.9-.5-1.5-1.5-1.5-2.5V12c0-1.1.6-2.1 1.5-2.5l5-2.9c.9-.5 2-.5 2.9 0l5.6 3.3c.9.5.9 1.8 0 2.3zM10.5 6.9l5.6-3.3c.9-.5 2-.5 2.9 0l5 2.9c.9.5 1.5 1.5 1.5 2.5v6c0 1.1-.6 2.1-1.5 2.5l-5 2.9c-.9.5-2 .5-2.9 0l-5.6-3.3c-.9-.5-.9-1.8 0-2.3z"/>,
 
+    // GitLab
+    'gitlab': <path d="M23.955 13.587l-1.342-4.125-2.664-8.199c-.066-.204-.26-.339-.472-.329-.212.009-.398.156-.452.359l-2.736 10.323H7.711L4.975 1.303c-.054-.203-.24-.35-.452-.359-.212-.01-.406.125-.472.329L1.387 9.462.045 13.587a.605.605 0 0 0 .216.7l8.72 6.345 3.018 2.196 3.018-2.196 8.72-6.345a.606.606 0 0 0 .216-.7z"/>,
+
+    // Bitbucket
+    'bitbucket': <path d="M.778 1.213a.775.775 0 0 0-.768.902L2.6 15.652c.1.758.745 1.332 1.51 1.344h15.772c.767-.012 1.411-.586 1.51-1.344l2.59-13.537a.775.775 0 0 0-.768-.902H.778zM14.7 10.5h-5.4l-.77-4h6.94l-.77 4z"/>,
+
+    // Cloudflare
+    'cloudflare': <path d="M11.96 4.79c-3.14 0-5.83 2.1-6.68 5.01-.3-.06-.61-.09-.93-.09-2.6 0-4.71 2.11-4.71 4.71s2.11 4.71 4.71 4.71h14.5c2.8 0 5.07-2.27 5.07-5.07 0-2.66-2.05-4.83-4.66-5.04-.79-2.43-3.08-4.23-5.3-4.23z"/>,
+
     // Generic Key/Security
     'default': <path d="M7 11V7a5 5 0 0 1 10 0v4h3v13h-16v-13h3zm2-4a3 3 0 0 0-6 0v4h6V7z"/>
 };
@@ -82,41 +92,8 @@ interface IssuerIconProps {
 }
 
 const IssuerIcon: React.FC<IssuerIconProps> = ({ issuer }) => {
-    const normalize = (str: string) => str.toLowerCase().replace(/\s/g, '');
-    const key = normalize(issuer || '');
-
-    if (!key) {
-        return <span style={{ pointerEvents: 'none' }}>?</span>;
-    }
-
-    // Check for exact matches first
-    let matchedKey = Object.keys(ICONS).find(k => key.includes(k) || k.includes(key));
-
-    // Better matching logic
-    if (key.includes('google')) matchedKey = 'google';
-    else if (key.includes('microsoft') || key.includes('outlook') || key.includes('office')) matchedKey = 'microsoft';
-    else if (key.includes('amazon') || key.includes('aws')) matchedKey = 'amazon';
-    else if (key.includes('facebook') || key.includes('meta')) matchedKey = 'facebook';
-    else if (key.includes('github')) matchedKey = 'github';
-    else if (key.includes('discord')) matchedKey = 'discord';
-    else if (key.includes('twitter') || key === 'x') matchedKey = 'twitter';
-    else if (key.includes('apple') || key.includes('icloud')) matchedKey = 'apple';
-    else if (key.includes('dropbox')) matchedKey = 'dropbox';
-    else if (key.includes('slack')) matchedKey = 'slack';
-    else if (key.includes('binance')) matchedKey = 'binance';
-    else if (key.includes('proton')) matchedKey = 'protonmail';
-    else if (key.includes('paypal')) matchedKey = 'paypal';
-    else if (key.includes('stripe')) matchedKey = 'stripe';
-    else if (key.includes('digitalocean') || key.includes('do_')) matchedKey = 'digitalocean';
-    else if (key.includes('heroku')) matchedKey = 'heroku';
-    else if (key.includes('linkedin')) matchedKey = 'linkedin';
-    else if (key.includes('instagram')) matchedKey = 'instagram';
-    else if (key.includes('twitch')) matchedKey = 'twitch';
-    else if (key.includes('reddit')) matchedKey = 'reddit';
-    else if (key.includes('teamviewer')) matchedKey = 'teamviewer';
-    else if (key.includes('evernote')) matchedKey = 'evernote';
-    else if (key.includes('coinbase')) matchedKey = 'coinbase';
-    else if (key.includes('blockchain')) matchedKey = 'blockchain';
+    // Use the central utility for brand detection
+    const matchedKey = getBrandKey(issuer);
 
     const icon = matchedKey && ICONS[matchedKey];
 
@@ -129,7 +106,7 @@ const IssuerIcon: React.FC<IssuerIconProps> = ({ issuer }) => {
     }
 
     // Fallback to first letter
-    const letter = issuer ? issuer.charAt(0).toUpperCase() : '?';
+    const letter = issuer ? issuer.trim().charAt(0).toUpperCase() : '?';
     return <span style={{ pointerEvents: 'none' }}>{letter}</span>;
 };
 

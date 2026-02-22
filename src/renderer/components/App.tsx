@@ -448,6 +448,7 @@ const App: React.FC = () => {
                                 onImport={handleImport}
                                 onImportEncrypted={handleImportEncrypted}
                                 onImportAuthy={handleImportAuthy}
+                                itemsCount={items.length}
                             />
                         ) : loading ? (
                             <div className="loading">Carregando...</div>
