@@ -115,4 +115,34 @@ describe('useToken', () => {
 
         window.atob = originalAtob;
     });
+
+    it('handles hex encoded secret correctly', () => {
+        const itemHex: TwoFAItem = { ...mockItem, encoding: 'hex', secret: '1234abcd' };
+
+        const { result } = renderHook(() => useToken(itemHex));
+
+        expect(OTPAuth.Secret.fromHex).toHaveBeenCalledWith('1234abcd');
+        expect(result.current.token).toBe('123 456');
+    });
+
+    it('handles ascii encoded secret correctly', () => {
+        const itemAscii: TwoFAItem = { ...mockItem, encoding: 'ascii', secret: 'ascii_secret' };
+
+        const { result } = renderHook(() => useToken(itemAscii));
+
+        expect(OTPAuth.Secret.fromLatin1).toHaveBeenCalledWith('ascii_secret');
+        expect(result.current.token).toBe('123 456');
+    });
+
+    it('handles general generation error gracefully', () => {
+        (OTPAuth.TOTP as unknown as jest.Mock).mockImplementation(() => {
+            throw new Error('TOTP Error');
+        });
+        console.error = jest.fn();
+
+        const { result } = renderHook(() => useToken(mockItem));
+
+        expect(console.error).toHaveBeenCalledWith('Failed to generate token:', expect.any(Error));
+        expect(result.current.token).toBe('ERROR');
+    });
 });
