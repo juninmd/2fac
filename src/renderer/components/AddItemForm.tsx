@@ -2,12 +2,15 @@ import React, { useState } from 'react';
 import * as OTPAuth from 'otpauth';
 import { TwoFAItem } from '../types';
 import { COLORS } from '../constants';
+import { getBrandColor } from '../utils/brandUtils';
+import IssuerIcon from './IssuerIcon';
 
 interface AddItemFormProps {
     onAdd: (item: Omit<TwoFAItem, 'id'>) => void;
+    initialUri?: string;
 }
 
-const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd }) => {
+const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd, initialUri }) => {
     const [isScanning, setIsScanning] = useState(false);
     const [formData, setFormData] = useState({
         account: '',
@@ -23,6 +26,43 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd }) => {
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
+
+    // Auto-select color when issuer changes
+    React.useEffect(() => {
+        const brandColor = getBrandColor(formData.issuer);
+        if (brandColor) {
+            setFormData(prev => ({ ...prev, color: brandColor }));
+        }
+    }, [formData.issuer]);
+
+    React.useEffect(() => {
+        if (initialUri && initialUri.startsWith('otpauth://')) {
+            try {
+                const parsed = OTPAuth.URI.parse(initialUri);
+                let secret = '';
+                if (parsed.secret) {
+                    secret = parsed.secret.base32;
+                }
+
+                if (parsed && secret) {
+                    setFormData(prev => ({
+                        ...prev,
+                        account: parsed.label || prev.account,
+                        issuer: parsed.issuer || prev.issuer,
+                        secret: secret,
+                        algorithm: (parsed.algorithm || 'SHA1') as any,
+                        digits: (parsed.digits || 6).toString(),
+                        period: (parsed instanceof OTPAuth.TOTP ? parsed.period : 30).toString(),
+                        encoding: 'base32',
+                        type: 'totp'
+                    }));
+                    setErrors({});
+                }
+            } catch (err) {
+                console.error('Failed to parse initial URI', err);
+            }
+        }
+    }, [initialUri]);
 
     const validateForm = () => {
         const newErrors: Record<string, string> = {};
@@ -202,15 +242,35 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd }) => {
 
             <div className="form-group">
                 <label htmlFor="issuer">Emissor (Serviço) *</label>
-                <input
-                    type="text"
-                    id="issuer"
-                    name="issuer"
-                    value={formData.issuer}
-                    onChange={handleChange}
-                    placeholder="ex: Google, GitHub"
-                    className={errors.issuer ? 'error' : ''}
-                />
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <div style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '8px',
+                        backgroundColor: formData.color,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        flexShrink: 0,
+                        fontSize: '1.2rem',
+                        fontWeight: 'bold',
+                        transition: 'background-color 0.2s',
+                        border: '1px solid var(--border-color)'
+                    }}>
+                        <IssuerIcon issuer={formData.issuer} />
+                    </div>
+                    <input
+                        type="text"
+                        id="issuer"
+                        name="issuer"
+                        value={formData.issuer}
+                        onChange={handleChange}
+                        placeholder="ex: Google, GitHub"
+                        className={errors.issuer ? 'error' : ''}
+                        style={{ flex: 1 }}
+                    />
+                </div>
                 {errors.issuer && <span className="error-message">{errors.issuer}</span>}
             </div>
 

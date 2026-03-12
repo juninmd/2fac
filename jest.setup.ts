@@ -26,6 +26,7 @@ Object.defineProperty(window, 'electron', {
     importAuthy: jest.fn(),
     toggleBlur: jest.fn(),
     verifyMasterPassword: jest.fn(),
+    onProtocolUrl: jest.fn(() => jest.fn()),
   },
   writable: true,
 });

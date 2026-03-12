@@ -26,24 +26,25 @@ Este documento define as personas de IA e as diretrizes de desenvolvimento para 
 
 ## 🛠️ Regras de Desenvolvimento (Nova Standard)
 
-### 1. Segurança em Primeiro Lugar (Zero Trust)
-*   **IPC Seguro:** Nunca exponha o `remote` module. Use `contextBridge` para definir uma API limitada entre o processo principal e o renderer.
-*   **Sanitização:** Todos os inputs (especialmente segredos e URIs de importação) devem ser validados e sanitizados antes do processamento.
-*   **Storage:** Dados sensíveis devem ser protegidos. Considere criptografia em repouso para o `electron-store`.
+### 1. Engenharia de Software
+*   **DRY & KISS:** Mantenha o código simples e reutilizável. Evite complexidade desnecessária.
+*   **SOLID:** Siga os princípios SOLID para uma arquitetura sustentável.
+*   **Limites de Arquivo:** Tente manter arquivos abaixo de 200 linhas para garantir a manutenibilidade.
 
-### 2. Padrões de Código
-*   **TypeScript Estrito:** `any` é proibido. Interfaces e tipos devem ser exaustivos.
-*   **Componentes Funcionais:** Use React Hooks e padrões funcionais. Evite componentes de classe.
-*   **Clean Code:** Funções pequenas, responsabilidade única (SRP) e nomes descritivos.
+### 2. Segurança em Primeiro Lugar (Zero Trust)
+*   **IPC Seguro:** Nunca exponha o `remote` module. Use `contextBridge` para definir uma API limitada.
+*   **Sanitização:** Todos os inputs devem ser validados.
+*   **Storage:** Dados sensíveis devem ser protegidos com AES-256 em repouso.
 
-### 3. Fluxo de Trabalho
-*   **Commits Semânticos:** Use o padrão Conventional Commits (ex: `feat:`, `fix:`, `docs:`, `chore:`).
-*   **Test Driven Development (TDD):** Prefira escrever o teste antes da implementação, especialmente para lógica de geração de tokens.
-*   **Documentação Viva:** Qualquer mudança em lógica de negócio ou estrutura deve refletir no README ou nos arquivos de documentação técnica.
+### 3. Padrões de Código
+*   **TypeScript Estrito:** `any` é terminantemente proibido.
+*   **Componentes Funcionais:** Use React Hooks.
+*   **Clean Code:** Nomes semânticos e funções de responsabilidade única.
 
-### 4. Performance
-*   **Bundle Size:** Monitore o tamanho das dependências. Evite bibliotecas pesadas se uma solução nativa ou leve existir.
-*   **Main Thread:** Nunca bloqueie a Main Thread com operações pesadas de I/O. Use processos assíncronos.
+### 4. Qualidade & Testes
+*   **TDD:** Escreva testes antes da implementação para lógica crítica.
+*   **Cobertura:** Almeje >80% de cobertura de testes em arquivos de lógica de negócio.
+*   **Commits Semânticos:** Use o padrão Conventional Commits.
 
 ---
 

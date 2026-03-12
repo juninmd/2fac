@@ -8,6 +8,7 @@ interface SettingsProps {
     onImport: () => void;
     onImportEncrypted: () => void;
     onImportAuthy: () => void;
+    itemsCount: number;
 }
 
 const Settings: React.FC<SettingsProps> = ({
@@ -16,7 +17,8 @@ const Settings: React.FC<SettingsProps> = ({
     onExportEncrypted,
     onImport,
     onImportEncrypted,
-    onImportAuthy
+    onImportAuthy,
+    itemsCount
 }) => {
     const [settings, setSettings] = useState<AppSettings>({
         minimizeToTray: false,
@@ -332,14 +334,24 @@ const Settings: React.FC<SettingsProps> = ({
                     <div className="settings-section">
                         <h3>Sobre o 2FAC</h3>
                         <p>Versão 1.0.0</p>
+                        <p><strong>Contas Protegidas:</strong> {itemsCount}</p>
                         <p style={{ marginTop: '10px' }}>
-                            Um autenticador de desktop focado em privacidade e segurança local.
+                            Uma alternativa segura e offline ao Authy Desktop, focada em privacidade e soberania dos seus dados.
                         </p>
                         <ul style={{ marginTop: '10px', paddingLeft: '20px', color: 'var(--text-secondary)' }}>
-                            <li>Armazenamento 100% Local</li>
+                            <li>Armazenamento 100% Local (Sem Nuvem)</li>
                             <li>Criptografia AES-256</li>
                             <li>Sem rastreamento ou nuvem</li>
                             <li>Código Aberto</li>
+                        </ul>
+
+                        <h4 style={{ marginTop: '20px' }}>Atalhos de Teclado</h4>
+                        <ul style={{ paddingLeft: '20px', color: 'var(--text-secondary)' }}>
+                            <li><strong>Ctrl/Cmd + F:</strong> Buscar Conta</li>
+                            <li><strong>Ctrl/Cmd + N:</strong> Adicionar Conta</li>
+                            <li><strong>Ctrl/Cmd + ,:</strong> Configurações</li>
+                            <li><strong>Ctrl/Cmd + L:</strong> Bloquear App</li>
+                            <li><strong>Esc:</strong> Fechar / Limpar Busca</li>
                         </ul>
                     </div>
                 )}

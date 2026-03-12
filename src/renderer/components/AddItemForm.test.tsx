@@ -172,7 +172,7 @@ describe('AddItemForm', () => {
         fireEvent.click(colorDivs![1]); // Click 2nd color
 
         fireEvent.change(screen.getByPlaceholderText('ex: seu_email@gmail.com'), { target: { value: 'test@example.com' } });
-        fireEvent.change(screen.getByPlaceholderText('ex: Google, GitHub'), { target: { value: 'Google' } });
+        fireEvent.change(screen.getByPlaceholderText('ex: Google, GitHub'), { target: { value: 'TestIssuer' } });
         fireEvent.change(screen.getByPlaceholderText('Cole aqui sua chave secreta'), { target: { value: 'SECRET' } });
 
         fireEvent.click(screen.getByText('+ Adicionar Conta'));
@@ -180,5 +180,59 @@ describe('AddItemForm', () => {
         expect(mockOnAdd).toHaveBeenCalledWith(expect.objectContaining({
             color: COLORS[1]
         }));
+    });
+
+    it('handles pasted invalid otpauth URI gracefully', () => {
+        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        render(<AddItemForm onAdd={mockOnAdd} />);
+
+        // valid prefix but invalid content that throws
+        const invalidUri = 'otpauth://totp/Invalid%%%';
+        fireEvent.change(screen.getByPlaceholderText('Cole aqui sua chave secreta'), { target: { value: invalidUri } });
+
+        expect(consoleSpy).toHaveBeenCalledWith('Failed to parse pasted URI', expect.any(Error));
+        consoleSpy.mockRestore();
+    });
+
+    it('handles initial invalid otpauth URI gracefully', () => {
+        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        const invalidUri = 'otpauth://totp/Invalid%%%';
+
+        render(<AddItemForm onAdd={mockOnAdd} initialUri={invalidUri} />);
+
+        expect(consoleSpy).toHaveBeenCalledWith('Failed to parse initial URI', expect.any(Error));
+        consoleSpy.mockRestore();
+    });
+
+    it('handles valid pasted otpauth URI without secret', () => {
+        render(<AddItemForm onAdd={mockOnAdd} />);
+
+        // A valid URI syntactically, but missing a secret
+        const noSecretUri = 'otpauth://totp/Example:alice@google.com?issuer=Example';
+        fireEvent.change(screen.getByPlaceholderText('Cole aqui sua chave secreta'), { target: { value: noSecretUri } });
+
+        // Shouldn't update form data entirely because secret is missing.
+        // We check that account name is NOT 'alice@google.com'
+        expect(screen.queryByDisplayValue('alice@google.com')).not.toBeInTheDocument();
+    });
+
+    it('handles valid initial otpauth URI', () => {
+        const validUri = 'otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&issuer=Example&algorithm=SHA256&digits=8&period=60';
+        render(<AddItemForm onAdd={mockOnAdd} initialUri={validUri} />);
+
+        expect(screen.getByDisplayValue('alice@google.com')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('Example')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('JBSWY3DPEHPK3PXP')).toBeInTheDocument();
+    });
+
+    it('handles valid pasted otpauth URI', () => {
+        render(<AddItemForm onAdd={mockOnAdd} />);
+
+        const validUri = 'otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&issuer=Example&algorithm=SHA256&digits=8&period=60';
+        fireEvent.change(screen.getByPlaceholderText('Cole aqui sua chave secreta'), { target: { value: validUri } });
+
+        expect(screen.getByDisplayValue('alice@google.com')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('Example')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('JBSWY3DPEHPK3PXP')).toBeInTheDocument();
     });
 });

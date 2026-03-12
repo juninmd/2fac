@@ -32,6 +32,7 @@ describe('Settings', () => {
       onImport: mockOnImport,
       onImportEncrypted: mockOnImportEncrypted,
       onImportAuthy: mockOnImportAuthy,
+      itemsCount: 5,
   };
 
   beforeEach(() => {
@@ -67,6 +68,48 @@ describe('Settings', () => {
     await waitFor(() => {
         expect(mockSetSettings).toHaveBeenCalledWith(expect.objectContaining({
             minimizeToTray: true
+        }));
+    });
+  });
+
+  it('updates autoLockTimeout and blurOnInactive', async () => {
+    render(<Settings {...defaultProps} />);
+    await waitFor(() => expect(mockGetSettings).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByText('Segurança'));
+
+    // Test autoLockTimeout
+    // The input is nested inside a label with "Tempo para bloqueio (minutos):"
+    const timeoutInput = screen.getByDisplayValue('5'); // Default is 5
+    fireEvent.change(timeoutInput, { target: { value: '10' } });
+
+    await waitFor(() => {
+        expect(mockSetSettings).toHaveBeenCalledWith(expect.objectContaining({
+            autoLockTimeout: 10
+        }));
+    });
+
+    // Test blurOnInactive
+    const blurCheckbox = screen.getByLabelText('Desfocar ao perder foco da janela');
+    fireEvent.click(blurCheckbox);
+
+    await waitFor(() => {
+        expect(mockSetSettings).toHaveBeenCalledWith(expect.objectContaining({
+            blurOnInactive: true // Since default mock returned false
+        }));
+    });
+  });
+
+  it('updates runOnStartup', async () => {
+    render(<Settings {...defaultProps} />);
+    await waitFor(() => expect(mockGetSettings).toHaveBeenCalled());
+
+    const checkbox = screen.getByLabelText('Iniciar com o sistema');
+    fireEvent.click(checkbox);
+
+    await waitFor(() => {
+        expect(mockSetSettings).toHaveBeenCalledWith(expect.objectContaining({
+            runOnStartup: true
         }));
     });
   });
@@ -152,5 +195,84 @@ describe('Settings', () => {
       // Also check the "Fechar" button at the bottom
       fireEvent.click(screen.getByText('Fechar', { selector: 'button.btn-secondary' }));
       expect(mockOnClose).toHaveBeenCalledTimes(2);
+  });
+
+  it('switches to About tab and verifies content', async () => {
+    render(<Settings {...defaultProps} />);
+    await waitFor(() => expect(mockGetSettings).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByText('Sobre'));
+
+    expect(screen.getByText('Sobre o 2FAC')).toBeInTheDocument();
+    expect(screen.getByText('Contas Protegidas:')).toBeInTheDocument();
+    expect(screen.getByText('5')).toBeInTheDocument(); // itemsCount
+  });
+
+  it('shows error when newPassword !== confirmPassword', async () => {
+    render(<Settings {...defaultProps} />);
+    await waitFor(() => expect(mockGetSettings).toHaveBeenCalled());
+    fireEvent.click(screen.getByText('Segurança'));
+
+    fireEvent.change(screen.getByPlaceholderText('Senha Atual'), { target: { value: 'oldpass' } });
+    fireEvent.change(screen.getByPlaceholderText('Nova Senha'), { target: { value: 'newpass' } });
+    fireEvent.change(screen.getByPlaceholderText('Confirmar Nova Senha'), { target: { value: 'diffpass' } });
+
+    fireEvent.click(screen.getByText('Atualizar Senha'));
+
+    await waitFor(() => {
+        expect(screen.getByText('As novas senhas não conferem.')).toBeInTheDocument();
+    });
+  });
+
+  it('shows error when newPassword.length < 4', async () => {
+    render(<Settings {...defaultProps} />);
+    await waitFor(() => expect(mockGetSettings).toHaveBeenCalled());
+    fireEvent.click(screen.getByText('Segurança'));
+
+    fireEvent.change(screen.getByPlaceholderText('Senha Atual'), { target: { value: 'oldpass' } });
+    fireEvent.change(screen.getByPlaceholderText('Nova Senha'), { target: { value: '123' } });
+    fireEvent.change(screen.getByPlaceholderText('Confirmar Nova Senha'), { target: { value: '123' } });
+
+    fireEvent.click(screen.getByText('Atualizar Senha'));
+
+    await waitFor(() => {
+        expect(screen.getByText('A nova senha deve ter pelo menos 4 caracteres.')).toBeInTheDocument();
+    });
+  });
+
+  it('shows error when checkMasterPassword returns false', async () => {
+    render(<Settings {...defaultProps} />);
+    await waitFor(() => expect(mockGetSettings).toHaveBeenCalled());
+    fireEvent.click(screen.getByText('Segurança'));
+
+    fireEvent.change(screen.getByPlaceholderText('Senha Atual'), { target: { value: 'wrongpass' } });
+    fireEvent.change(screen.getByPlaceholderText('Nova Senha'), { target: { value: 'newpass' } });
+    fireEvent.change(screen.getByPlaceholderText('Confirmar Nova Senha'), { target: { value: 'newpass' } });
+
+    mockCheckMasterPassword.mockResolvedValue(false);
+
+    fireEvent.click(screen.getByText('Atualizar Senha'));
+
+    await waitFor(() => {
+        expect(screen.getByText('Senha atual incorreta.')).toBeInTheDocument();
+    });
+  });
+
+  it('handles exception in checkMasterPassword or setMasterPassword', async () => {
+    render(<Settings {...defaultProps} />);
+    await waitFor(() => expect(mockGetSettings).toHaveBeenCalled());
+    fireEvent.click(screen.getByText('Segurança'));
+
+    fireEvent.change(screen.getByPlaceholderText('Senha Atual'), { target: { value: 'oldpass' } });
+    fireEvent.change(screen.getByPlaceholderText('Nova Senha'), { target: { value: 'newpass' } });
+    fireEvent.change(screen.getByPlaceholderText('Confirmar Nova Senha'), { target: { value: 'newpass' } });
+
+    mockCheckMasterPassword.mockRejectedValue(new Error('Crash'));
+
+    fireEvent.click(screen.getByText('Atualizar Senha'));
+
+    await waitFor(() => {
+        expect(screen.getByText('Erro ao alterar senha.')).toBeInTheDocument();
+    });
   });
 });

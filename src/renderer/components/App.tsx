@@ -22,6 +22,7 @@ const App: React.FC = () => {
     const [showSettings, setShowSettings] = useState(false);
     const [settings, setSettings] = useState<any>(null);
     const [isWindowFocused, setIsWindowFocused] = useState(true);
+    const [pendingUri, setPendingUri] = useState<string | null>(null);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -43,6 +44,14 @@ const App: React.FC = () => {
     }, []);
 
     useEffect(() => {
+        const unsubscribe = window.electron.onProtocolUrl((url) => {
+            setPendingUri(url);
+            setSidebarMode('add');
+        });
+        return unsubscribe;
+    }, []);
+
+    useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             const activeElement = document.activeElement as HTMLElement;
             const isInputFocused = activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA');
@@ -54,6 +63,12 @@ const App: React.FC = () => {
                 } else if (e.key === 'l') {
                     e.preventDefault();
                     setIsLocked(true);
+                } else if (e.key === 'n') {
+                    e.preventDefault();
+                    setSidebarMode(prev => prev === 'add' ? 'none' : 'add');
+                } else if (e.key === ',') {
+                    e.preventDefault();
+                    setShowSettings(true);
                 }
             } else if (e.key === 'Escape') {
                 if (sidebarMode !== 'none') {
@@ -380,10 +395,14 @@ const App: React.FC = () => {
                     <div className="sidebar">
                         <div className="sidebar-section">
                             <h3>Adicionar Conta</h3>
-                            <AddItemForm onAdd={(item) => {
-                                handleAddItem(item);
-                                setSidebarMode('none');
-                            }} />
+                            <AddItemForm
+                                initialUri={pendingUri || undefined}
+                                onAdd={(item) => {
+                                    handleAddItem(item);
+                                    setSidebarMode('none');
+                                    setPendingUri(null);
+                                }}
+                            />
                         </div>
                     </div>
                 )}
@@ -429,6 +448,7 @@ const App: React.FC = () => {
                                 onImport={handleImport}
                                 onImportEncrypted={handleImportEncrypted}
                                 onImportAuthy={handleImportAuthy}
+                                itemsCount={items.length}
                             />
                         ) : loading ? (
                             <div className="loading">Carregando...</div>

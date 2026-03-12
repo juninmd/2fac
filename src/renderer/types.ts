@@ -29,6 +29,7 @@ export interface ElectronAPI {
     set2FAItems: (items: TwoFAItem[]) => Promise<boolean>;
     getSettings: () => Promise<AppSettings>;
     setSettings: (settings: AppSettings) => Promise<boolean>;
+    onProtocolUrl: (callback: (url: string) => void) => () => void;
 }
 
 export interface AppSettings {
