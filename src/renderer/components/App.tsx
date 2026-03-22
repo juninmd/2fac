@@ -111,6 +111,32 @@ const App: React.FC = () => {
     const loadSettings = async () => {
         const loaded = await window.electron.getSettings();
         setSettings(loaded);
+
+        // Apply Theme and Accent Color
+        const rootStyle = document.documentElement.style;
+        if (loaded.theme === 'light') {
+            rootStyle.setProperty('--bg-dark', '#f0f2f5');
+            rootStyle.setProperty('--bg-card', '#ffffff');
+            rootStyle.setProperty('--bg-hover', '#e4e6eb');
+            rootStyle.setProperty('--text-primary', '#1c1e21');
+            rootStyle.setProperty('--text-secondary', '#65676b');
+            rootStyle.setProperty('--border-color', '#ccd0d5');
+        } else {
+            rootStyle.setProperty('--bg-dark', '#1a1a1a');
+            rootStyle.setProperty('--bg-card', '#2d2d2d');
+            rootStyle.setProperty('--bg-hover', '#3d3d3d');
+            rootStyle.setProperty('--text-primary', '#ffffff');
+            rootStyle.setProperty('--text-secondary', '#aaaaaa');
+            rootStyle.setProperty('--border-color', '#444444');
+        }
+
+        if (loaded.accentColor) {
+            rootStyle.setProperty('--primary-color', loaded.accentColor);
+            rootStyle.setProperty('--primary-hover', loaded.accentColor); // Simple fallback
+        } else {
+            rootStyle.setProperty('--primary-color', '#e23e3e');
+            rootStyle.setProperty('--primary-hover', '#c53030');
+        }
     };
 
     useEffect(() => {
@@ -327,6 +353,21 @@ const App: React.FC = () => {
         }
     };
 
+    const handleImportGoogleAuth = async () => {
+        try {
+            const result = await window.electron.importGoogleAuth();
+            if (result.success) {
+                await loadItems();
+                alert(`${result.count} contas do Google Authenticator importadas com sucesso!`);
+            } else {
+                alert(`Erro ao importar: ${result.error || 'Arquivo inválido'}`);
+            }
+        } catch (error) {
+            console.error('Failed to import from Google Authenticator:', error);
+            alert('Erro ao importar Google Authenticator');
+        }
+    };
+
     if (isLocked) {
         return <LockScreen onUnlock={handleUnlock} />;
     }
@@ -448,6 +489,7 @@ const App: React.FC = () => {
                                 onImport={handleImport}
                                 onImportEncrypted={handleImportEncrypted}
                                 onImportAuthy={handleImportAuthy}
+                                onImportGoogleAuth={handleImportGoogleAuth}
                                 itemsCount={items.length}
                             />
                         ) : loading ? (

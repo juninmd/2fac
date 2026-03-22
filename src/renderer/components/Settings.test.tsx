@@ -24,6 +24,7 @@ describe('Settings', () => {
   const mockOnImport = jest.fn();
   const mockOnImportEncrypted = jest.fn();
   const mockOnImportAuthy = jest.fn();
+  const mockOnImportGoogleAuth = jest.fn();
 
   const defaultProps = {
       onClose: mockOnClose,
@@ -32,6 +33,7 @@ describe('Settings', () => {
       onImport: mockOnImport,
       onImportEncrypted: mockOnImportEncrypted,
       onImportAuthy: mockOnImportAuthy,
+      onImportGoogleAuth: mockOnImportGoogleAuth,
       itemsCount: 5,
   };
 
@@ -170,6 +172,9 @@ describe('Settings', () => {
 
     fireEvent.click(screen.getByText('📱 Importar do Authy / URIs'));
     expect(mockOnImportAuthy).toHaveBeenCalled();
+
+    fireEvent.click(screen.getByText('📱 Importar do Google Auth'));
+    expect(mockOnImportGoogleAuth).toHaveBeenCalled();
   });
 
   it('switches to Devices tab and verifies local storage message', async () => {

@@ -23,6 +23,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd, initialUri }) => {
         encoding: 'base32',
         type: 'totp',
         color: '#e23e3e',
+        category: '',
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -99,6 +100,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd, initialUri }) => {
             encoding: formData.encoding as any,
             type: formData.type as any,
             color: formData.color,
+            category: formData.category.trim(),
         });
 
         // Reset form
@@ -113,6 +115,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd, initialUri }) => {
             encoding: 'base32',
             type: 'totp',
             color: '#e23e3e',
+            category: '',
         });
         setErrors({});
     };
@@ -286,6 +289,26 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd, initialUri }) => {
                     className={errors.secret ? 'error' : ''}
                 />
                 {errors.secret && <span className="error-message">{errors.secret}</span>}
+            </div>
+
+            <div className="form-group">
+                <label htmlFor="category">Categoria (opcional)</label>
+                <input
+                    type="text"
+                    id="category"
+                    name="category"
+                    value={formData.category}
+                    onChange={handleChange}
+                    placeholder="ex: Trabalho, Pessoal"
+                    list="category-suggestions"
+                />
+                <datalist id="category-suggestions">
+                    <option value="Trabalho" />
+                    <option value="Pessoal" />
+                    <option value="Social" />
+                    <option value="Finanças" />
+                    <option value="Jogos" />
+                </datalist>
             </div>
 
             <div className="form-group">

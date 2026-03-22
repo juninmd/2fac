@@ -5,6 +5,7 @@ import * as crypto from 'crypto';
 import Store from 'electron-store';
 import jsQR from 'jsqr';
 import * as OTPAuth from 'otpauth';
+import * as protobuf from 'protobufjs';
 
 const isDev = process.env.NODE_ENV === 'development' || true; // Force dev for debugging
 app.disableHardwareAcceleration();
@@ -189,6 +190,129 @@ app.on('activate', () => {
 });
 
 // IPC Handlers
+
+// Google Authenticator Protobuf definitions
+const googleAuthProto = `
+syntax = "proto3";
+message MigrationPayload {
+  repeated OtpParameters otp_parameters = 1;
+  int32 version = 2;
+  int32 batch_size = 3;
+  int32 batch_index = 4;
+  int32 batch_id = 5;
+}
+message OtpParameters {
+  bytes secret = 1;
+  string name = 2;
+  string issuer = 3;
+  Algorithm algorithm = 4;
+  int32 digits = 5;
+  OtpType type = 6;
+  int64 counter = 7;
+}
+enum Algorithm {
+  ALGORITHM_UNSPECIFIED = 0;
+  ALGORITHM_SHA1 = 1;
+  ALGORITHM_SHA256 = 2;
+  ALGORITHM_SHA512 = 3;
+  ALGORITHM_MD5 = 4;
+}
+enum OtpType {
+  OTP_TYPE_UNSPECIFIED = 0;
+  OTP_TYPE_HOTP = 1;
+  OTP_TYPE_TOTP = 2;
+}
+`;
+
+const root = protobuf.parse(googleAuthProto).root;
+const MigrationPayload = root.lookupType("MigrationPayload");
+
+function decodeBase32(buffer: Uint8Array): string {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    let bits = 0;
+    let value = 0;
+    let output = '';
+
+    for (let i = 0; i < buffer.length; i++) {
+        value = (value << 8) | buffer[i];
+        bits += 8;
+        while (bits >= 5) {
+            output += alphabet[(value >>> (bits - 5)) & 31];
+            bits -= 5;
+        }
+    }
+    if (bits > 0) {
+        output += alphabet[(value << (5 - bits)) & 31];
+    }
+    return output;
+}
+
+ipcMain.handle('import-google-auth', async () => {
+    const result = await dialog.showOpenDialog(mainWindow!, {
+        filters: [{ name: 'Links otpauth-migration', extensions: ['txt'] }],
+        title: 'Importar do Google Authenticator (Cole o URI num .txt e selecione)',
+        properties: ['openFile'],
+    });
+
+    if (!result.canceled && result.filePaths[0]) {
+        try {
+            const filePath = result.filePaths[0];
+            const fileContent = fs.readFileSync(filePath, 'utf-8');
+            const trimmed = fileContent.trim();
+
+            if (!trimmed.startsWith('otpauth-migration://offline?data=')) {
+                return { success: false, error: 'O arquivo não contém um link válido do otpauth-migration' };
+            }
+
+            const dataPart = trimmed.replace('otpauth-migration://offline?data=', '');
+            const decodedData = Buffer.from(decodeURIComponent(dataPart), 'base64');
+
+            const message = MigrationPayload.decode(decodedData) as any;
+            if (!message.otpParameters || message.otpParameters.length === 0) {
+                 return { success: false, error: 'Nenhum token encontrado' };
+            }
+
+            let importedCount = 0;
+            const currentItems = store.get('twoFAItems', []) as any[];
+            const existingSecrets = new Set(currentItems.map(i => i.secret));
+            const newItems: any[] = [];
+
+            message.otpParameters.forEach((otp: any) => {
+                 const secretBase32 = decodeBase32(otp.secret);
+                 if (!secretBase32 || existingSecrets.has(secretBase32)) return;
+
+                 const algorithmMap: Record<number, string> = { 1: 'SHA1', 2: 'SHA256', 3: 'SHA512' };
+                 let alg = algorithmMap[otp.algorithm] || 'SHA1';
+
+                 newItems.push({
+                    id: Date.now().toString() + Math.random(),
+                    account: otp.name || 'Conta Google Auth',
+                    issuer: otp.issuer || 'Google Authenticator',
+                    secret: secretBase32,
+                    algorithm: alg,
+                    digits: otp.digits === 2 ? 8 : 6,
+                    period: 30,
+                    type: otp.type === 1 ? 'hotp' : 'totp'
+                 });
+                 existingSecrets.add(secretBase32);
+                 importedCount++;
+            });
+
+            if (newItems.length > 0) {
+                store.set('twoFAItems', [...currentItems, ...newItems]);
+                return { success: true, count: importedCount };
+            }
+
+            return { success: false, error: 'Nenhum token novo encontrado (já existem ou inválidos)' };
+
+        } catch (error: any) {
+            console.error('Erro na importação Google Authenticator:', error);
+            return { success: false, error: error.message };
+        }
+    }
+    return { success: false };
+});
+
 ipcMain.handle('get-2fa-items', () => {
     const items = store.get('twoFAItems', []);
     return items;

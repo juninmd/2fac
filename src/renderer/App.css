@@ -166,6 +166,26 @@ body {
   margin: 0 auto;
 }
 
+.category-header {
+  grid-column: 1 / -1;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.3rem;
+  margin-top: 1rem;
+  margin-bottom: -0.5rem;
+  letter-spacing: 1px;
+}
+
+.category-header.sidebar-header {
+  padding: 8px 16px;
+  margin: 0;
+  background-color: rgba(0,0,0,0.2);
+  font-size: 0.8rem;
+  border-bottom: none;
+}
+
 /* Grid Mode */
 .item-list.grid-mode {
   display: grid;

@@ -14,11 +14,11 @@ const TokenDetail: React.FC<TokenDetailProps> = ({ item, onUpdate, onRemove }) =
     const { token, timeLeft, period } = useToken(item);
     const [copied, setCopied] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [editForm, setEditForm] = useState({ account: item.account, issuer: item.issuer, color: item.color || '#e23e3e' });
+    const [editForm, setEditForm] = useState({ account: item.account, issuer: item.issuer, color: item.color || '#e23e3e', category: item.category || '' });
 
     // Sync form with item changes
     React.useEffect(() => {
-        setEditForm({ account: item.account, issuer: item.issuer, color: item.color || '#e23e3e' });
+        setEditForm({ account: item.account, issuer: item.issuer, color: item.color || '#e23e3e', category: item.category || '' });
     }, [item]);
 
     const copyToClipboard = () => {
@@ -90,6 +90,16 @@ const TokenDetail: React.FC<TokenDetailProps> = ({ item, onUpdate, onRemove }) =
                     </div>
 
                     <div className="form-group">
+                        <label>Categoria</label>
+                        <input
+                            type="text"
+                            value={editForm.category}
+                            onChange={(e) => setEditForm({...editForm, category: e.target.value})}
+                            placeholder="ex: Trabalho, Pessoal"
+                        />
+                    </div>
+
+                    <div className="form-group">
                         <label>Cor</label>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: '8px' }}>
                             {COLORS.map(color => (
@@ -126,7 +136,7 @@ const TokenDetail: React.FC<TokenDetailProps> = ({ item, onUpdate, onRemove }) =
                     <IssuerIcon issuer={item.issuer} />
                 </div>
                 <div className="detail-info">
-                    <h1 className="detail-issuer">{item.issuer}</h1>
+                    <h1 className="detail-issuer">{item.issuer} {item.category ? `• ${item.category}` : ''}</h1>
                     <h2 className="detail-account">{item.account}</h2>
                 </div>
             </div>

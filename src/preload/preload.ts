@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('electron', {
     import2FA: () => ipcRenderer.invoke('import-2fa'),
     import2FAEncrypted: (password: string) => ipcRenderer.invoke('import-2fa-encrypted', password),
     importAuthy: () => ipcRenderer.invoke('import-authy'),
+    importGoogleAuth: () => ipcRenderer.invoke('import-google-auth'),
     scanScreenQR: () => ipcRenderer.invoke('scan-screen-qr'),
     setMasterPassword: (password: string) => ipcRenderer.invoke('set-master-password', password),
     checkMasterPassword: (password: string) => ipcRenderer.invoke('check-master-password', password),

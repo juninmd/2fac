@@ -10,6 +10,7 @@ export interface TwoFAItem {
     encoding?: string;
     type?: string;
     color?: string;
+    category?: string;
 }
 
 export interface ElectronAPI {
@@ -22,6 +23,7 @@ export interface ElectronAPI {
     import2FA: () => Promise<{ success: boolean; count?: number }>;
     import2FAEncrypted: (password: string) => Promise<{ success: boolean; count?: number; error?: string }>;
     importAuthy: () => Promise<{ success: boolean; count?: number; error?: string }>;
+    importGoogleAuth: () => Promise<{ success: boolean; count?: number; error?: string }>;
     scanScreenQR: () => Promise<{ success: boolean; data?: string; error?: string }>;
     setMasterPassword: (password: string) => Promise<boolean>;
     checkMasterPassword: (password: string) => Promise<boolean>;
@@ -38,6 +40,8 @@ export interface AppSettings {
     autoLock: boolean;
     autoLockTimeout: number;
     blurOnInactive: boolean;
+    theme?: 'light' | 'dark';
+    accentColor?: string;
 }
 
 declare global {

@@ -61,15 +61,27 @@ const SidebarList: React.FC<SidebarListProps> = ({ items, selectedItemId, onSele
     return (
         <div className="sidebar-list">
             <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
-                {items.map((item) => (
-                    <SidebarItem
-                        key={item.id}
-                        item={item}
-                        isSelected={item.id === selectedItemId}
-                        onSelect={() => onSelect(item.id)}
-                        isDragEnabled={isDragEnabled}
-                    />
-                ))}
+                {items.map((item, index) => {
+                    const prevItem = index > 0 ? items[index - 1] : null;
+                    const showCategoryHeader = (item.category || 'Geral') !== (prevItem?.category || 'Geral');
+
+                    return (
+                        <React.Fragment key={`frag-${item.id}`}>
+                            {showCategoryHeader && (
+                                <div className="category-header sidebar-header">
+                                    {item.category || 'Geral'}
+                                </div>
+                            )}
+                            <SidebarItem
+                                key={item.id}
+                                item={item}
+                                isSelected={item.id === selectedItemId}
+                                onSelect={() => onSelect(item.id)}
+                                isDragEnabled={isDragEnabled}
+                            />
+                        </React.Fragment>
+                    );
+                })}
             </SortableContext>
         </div>
     );
