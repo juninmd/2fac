@@ -8,6 +8,7 @@ interface SettingsProps {
     onImport: () => void;
     onImportEncrypted: () => void;
     onImportAuthy: () => void;
+    onImportGoogleAuth: () => void;
     itemsCount: number;
 }
 
@@ -18,6 +19,7 @@ const Settings: React.FC<SettingsProps> = ({
     onImport,
     onImportEncrypted,
     onImportAuthy,
+    onImportGoogleAuth,
     itemsCount
 }) => {
     const [settings, setSettings] = useState<AppSettings>({
@@ -25,7 +27,9 @@ const Settings: React.FC<SettingsProps> = ({
         runOnStartup: false,
         autoLock: true,
         autoLockTimeout: 5,
-        blurOnInactive: true
+        blurOnInactive: true,
+        theme: 'dark',
+        accentColor: '#e23e3e'
     });
 
     const [activeTab, setActiveTab] = useState<'general' | 'security' | 'data' | 'devices' | 'about'>('general');
@@ -132,6 +136,28 @@ const Settings: React.FC<SettingsProps> = ({
 
                 {activeTab === 'general' && (
                     <div className="settings-section">
+                        <h3>Aparência</h3>
+                        <div className="setting-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '10px' }}>
+                            <label className="setting-label">Tema:</label>
+                            <select
+                                className="settings-input"
+                                value={settings.theme || 'dark'}
+                                onChange={(e) => handleSettingChange('theme', e.target.value)}
+                            >
+                                <option value="dark">Escuro</option>
+                                <option value="light">Claro</option>
+                            </select>
+                        </div>
+                        <div className="setting-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '10px', marginBottom: '20px' }}>
+                            <label className="setting-label">Cor de Destaque:</label>
+                            <input
+                                type="color"
+                                value={settings.accentColor || '#e23e3e'}
+                                onChange={(e) => handleSettingChange('accentColor', e.target.value)}
+                                style={{ width: '50px', height: '50px', padding: 0, border: 'none', cursor: 'pointer' }}
+                            />
+                        </div>
+
                         <h3>Comportamento</h3>
 
                         <div className="setting-item">
@@ -293,6 +319,16 @@ const Settings: React.FC<SettingsProps> = ({
                                 </p>
                                 <button className="btn btn-secondary" onClick={onImportAuthy}>
                                     📱 Importar do Authy / URIs
+                                </button>
+                            </div>
+
+                            <div className="settings-card" style={{ marginTop: '15px' }}>
+                                <h4>Google Authenticator</h4>
+                                <p>
+                                    Importe contas usando um link de migração otpauth-migration exportado do Google Authenticator.
+                                </p>
+                                <button className="btn btn-secondary" onClick={onImportGoogleAuth}>
+                                    📱 Importar do Google Auth
                                 </button>
                             </div>
                         </div>

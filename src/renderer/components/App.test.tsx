@@ -27,7 +27,7 @@ jest.mock('./LockScreen', () => ({ onUnlock }: any) => (
     <button onClick={onUnlock}>Unlock</button>
   </div>
 ));
-jest.mock('./Settings', () => ({ onClose, onExport, onExportEncrypted, onImport, onImportEncrypted, onImportAuthy }: any) => (
+jest.mock('./Settings', () => ({ onClose, onExport, onExportEncrypted, onImport, onImportEncrypted, onImportAuthy, onImportGoogleAuth }: any) => (
   <div data-testid="settings">
     <button onClick={onClose}>Close Settings</button>
     <button onClick={onExport}>📥 Exportar JSON</button>
@@ -35,6 +35,7 @@ jest.mock('./Settings', () => ({ onClose, onExport, onExportEncrypted, onImport,
     <button onClick={onImport}>📤 Importar JSON</button>
     <button onClick={onImportEncrypted}>🔓 Restaurar Backup</button>
     <button onClick={onImportAuthy}>📱 Importar do Authy / URIs</button>
+    <button onClick={onImportGoogleAuth}>📱 Importar do Google Auth</button>
   </div>
 ));
 jest.mock('./SidebarList', () => (props: any) => (
@@ -78,6 +79,7 @@ const mockExport2FAEncrypted = jest.fn();
 const mockImport2FA = jest.fn();
 const mockImport2FAEncrypted = jest.fn();
 const mockImportAuthy = jest.fn();
+const mockImportGoogleAuth = jest.fn();
 const mockOnProtocolUrl = jest.fn(() => jest.fn());
 
 beforeAll(() => {
@@ -93,6 +95,7 @@ beforeAll(() => {
     import2FA: mockImport2FA,
     import2FAEncrypted: mockImport2FAEncrypted,
     importAuthy: mockImportAuthy,
+    importGoogleAuth: mockImportGoogleAuth,
     onProtocolUrl: mockOnProtocolUrl,
   };
 });
