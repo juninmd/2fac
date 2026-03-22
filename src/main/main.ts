@@ -285,7 +285,7 @@ ipcMain.handle('import-google-auth', async () => {
                  let alg = algorithmMap[otp.algorithm] || 'SHA1';
 
                  newItems.push({
-                    id: Date.now().toString() + Math.random(),
+                    id: crypto.randomUUID(),
                     account: otp.name || 'Conta Google Auth',
                     issuer: otp.issuer || 'Google Authenticator',
                     secret: secretBase32,
@@ -307,7 +307,7 @@ ipcMain.handle('import-google-auth', async () => {
 
         } catch (error: any) {
             console.error('Erro na importação Google Authenticator:', error);
-            return { success: false, error: error.message };
+            return { success: false, error: 'Ocorreu um erro inesperado durante a importação.' };
         }
     }
     return { success: false };
