@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as protobuf from 'protobufjs';
 import { ImportResult, TwoFAItem } from '../types';
 import { getExistingSecrets } from './base';
-import { decodeBase32, getAlgorithmName } from '../crypto';
+import { encodeBase32, getAlgorithmName, generateId } from '../crypto';
 import { getTwoFAItems, setTwoFAItems } from '../store';
 
 const googleAuthProto = `
@@ -66,7 +66,7 @@ function extractOtpParameters(decodedData: Buffer): TwoFAItem[] {
         id: '',
         account: otp.name || 'Conta Google Auth',
         issuer: otp.issuer || 'Google Authenticator',
-        secret: decodeBase32(otp.secret),
+        secret: encodeBase32(otp.secret),
         algorithm: getAlgorithmName(otp.algorithm || 1),
         digits: otp.digits === 2 ? 8 : 6,
         period: 30,
@@ -95,7 +95,7 @@ export async function importGoogleAuth(filePath: string): Promise<ImportResult> 
 
         for (const item of otpItems) {
             if (!item.secret || existingSecrets.has(item.secret)) continue;
-            newItems.push({ ...item, id: Date.now().toString() });
+            newItems.push({ ...item, id: generateId() });
             existingSecrets.add(item.secret);
         }
 
