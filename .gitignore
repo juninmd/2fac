@@ -6,3 +6,10 @@ dist/
 *.log
 coverage/
 verification/
+# Environment and secrets
+.env
+*.key
+*.pem
+*.p12
+secrets/
+config/secrets.yml
