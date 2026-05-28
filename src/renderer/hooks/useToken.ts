@@ -8,7 +8,7 @@ export const useToken = (item: TwoFAItem) => {
     const [period, setPeriod] = useState<number>(30);
 
     useEffect(() => {
-        setPeriod(item.period || 30);
+        setPeriod(item.period ?? 30);
         generateToken();
         const interval = setInterval(() => {
             generateToken();
@@ -50,9 +50,9 @@ export const useToken = (item: TwoFAItem) => {
             const totp = new OTPAuth.TOTP({
                 issuer: item.issuer,
                 label: item.account,
-                algorithm: (item.algorithm || 'SHA1').toUpperCase(),
-                digits: item.digits || 6,
-                period: item.period || 30,
+                algorithm: (item.algorithm ?? 'SHA1').toUpperCase(),
+                digits: item.digits ?? 6,
+                period: item.period ?? 30,
                 secret: secret,
             });
 
@@ -60,18 +60,18 @@ export const useToken = (item: TwoFAItem) => {
 
             // Format token with space
             if (newToken.length === 6) {
-                setToken(newToken.slice(0, 3) + ' ' + newToken.slice(3));
+                setToken(`${newToken.slice(0, 3)} ${newToken.slice(3)}`);
             } else if (newToken.length === 7) {
-                setToken(newToken.slice(0, 3) + ' ' + newToken.slice(3));
+                setToken(`${newToken.slice(0, 3)} ${newToken.slice(3)}`);
             } else if (newToken.length === 8) {
-                setToken(newToken.slice(0, 4) + ' ' + newToken.slice(4));
+                setToken(`${newToken.slice(0, 4)} ${newToken.slice(4)}`);
             } else {
                 setToken(newToken);
             }
 
             // Calculate seconds remaining
             const now = Math.floor(Date.now() / 1000);
-            const timeStep = item.period || 30;
+            const timeStep = item.period ?? 30;
             const secondsIntoStep = now % timeStep;
             setTimeLeft(timeStep - secondsIntoStep);
         } catch (error) {

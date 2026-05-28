@@ -66,7 +66,7 @@ ipcMain.handle('set-master-password', (_event, password) => {
 
 **Recommendation**: Use bcrypt, scrypt, or Argon2:
 ```typescript
-const bcrypt = require('bcrypt');
+import bcrypt from 'bcrypt';
 const SALT_ROUNDS = 12;
 
 ipcMain.handle('set-master-password', async (_event, password) => {
