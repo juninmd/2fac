@@ -241,7 +241,7 @@ ipcMain.handle('export-2fa-encrypted', async (_event, password: string) => {
 
     if (!result.canceled && result.filePath) {
         try {
-            const backupFile = encryptData(JSON.stringify(items), password);
+            const backupFile = await encryptData(JSON.stringify(items), password);
             fs.writeFileSync(result.filePath, JSON.stringify(backupFile));
             return { success: true, path: result.filePath };
         } catch (error) {
