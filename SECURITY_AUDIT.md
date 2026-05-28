@@ -77,6 +77,9 @@ ipcMain.handle('set-master-password', async (_event, password) => {
 
 ipcMain.handle('check-master-password', async (_event, password) => {
     const savedHash = store.get('masterPassword');
+    if (typeof savedHash !== 'string') {
+        return false;
+    }
     return await bcrypt.compare(password, savedHash);
 });
 ```
