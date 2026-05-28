@@ -7,9 +7,52 @@ import jsQR from 'jsqr';
 import * as OTPAuth from 'otpauth';
 import * as protobuf from 'protobufjs';
 
-const isDev = process.env.NODE_ENV === 'development' || true; // Force dev for debugging
+interface TwoFAItem {
+    id: string;
+    account: string;
+    issuer: string;
+    secret: string;
+    description?: string;
+    algorithm?: string;
+    digits?: number;
+    period?: number;
+    encoding?: string;
+    type?: string;
+    color?: string;
+    category?: string;
+}
+
+interface AppSettings {
+    minimizeToTray: boolean;
+    runOnStartup: boolean;
+    autoLock: boolean;
+    autoLockTimeout: number;
+    blurOnInactive: boolean;
+    theme?: 'light' | 'dark';
+    accentColor?: string;
+}
+
+interface MasterPassword {
+    salt: string;
+    hash: string;
+}
+
+interface BackupFile {
+    version: number;
+    salt: string;
+    iv: string;
+    authTag: string;
+    data: string;
+}
+
+const isDev = process.env.NODE_ENV === 'development';
 app.disableHardwareAcceleration();
-const store = new Store();
+
+// Initialize store with encryption for sensitive 2FA data
+const store = new Store({
+    name: '2fac-config',
+    encryptionKey: crypto.randomBytes(32).toString('hex'),
+});
 
 let mainWindow: BrowserWindow | null;
 let tray: Tray | null = null;
@@ -88,15 +131,15 @@ const createWindow = () => {
         }
     });
 
-    // Force DevTools for debugging white screen
-    mainWindow.webContents.openDevTools();
-    console.log('isDev:', isDev);
+    if (isDev) {
+        mainWindow.webContents.openDevTools();
+    }
 
     // Prevent screen capture for security (mimic Authy behavior)
     mainWindow.setContentProtection(true);
 
     mainWindow.on('close', (event) => {
-        const settings: any = store.get('appSettings') || {};
+        const settings = (store.get('appSettings') as AppSettings | undefined) || {} as AppSettings;
         if (settings.minimizeToTray && !isQuitting) {
             event.preventDefault();
             mainWindow?.hide();
@@ -151,7 +194,7 @@ if (!gotTheLock) {
         }
 
         // Apply startup settings
-        const settings: any = store.get('appSettings') || {};
+        const settings = (store.get('appSettings') as AppSettings | undefined) || {} as AppSettings;
         app.setLoginItemSettings({
             openAtLogin: !!settings.runOnStartup,
             openAsHidden: !!settings.minimizeToTray
@@ -176,7 +219,7 @@ app.on('before-quit', () => {
 });
 
 app.on('window-all-closed', () => {
-    const settings: any = store.get('appSettings') || {};
+    const settings = (store.get('appSettings') as AppSettings | undefined) || {} as AppSettings;
     if (process.platform !== 'darwin' && !settings.minimizeToTray) {
         app.quit();
     }
@@ -267,32 +310,34 @@ ipcMain.handle('import-google-auth', async () => {
             const dataPart = trimmed.replace('otpauth-migration://offline?data=', '');
             const decodedData = Buffer.from(decodeURIComponent(dataPart), 'base64');
 
-            const message = MigrationPayload.decode(decodedData) as any;
-            if (!message.otpParameters || message.otpParameters.length === 0) {
+            const message = MigrationPayload.decode(decodedData) as unknown as Record<string, unknown>;
+            const otpParamsList = message.otpParameters as unknown[];
+            if (!otpParamsList || otpParamsList.length === 0) {
                  return { success: false, error: 'Nenhum token encontrado' };
             }
 
             let importedCount = 0;
-            const currentItems = store.get('twoFAItems', []) as any[];
+            const currentItems = store.get('twoFAItems', []) as TwoFAItem[];
             const existingSecrets = new Set(currentItems.map(i => i.secret));
-            const newItems: any[] = [];
+            const newItems: TwoFAItem[] = [];
 
-            message.otpParameters.forEach((otp: any) => {
-                 const secretBase32 = decodeBase32(otp.secret);
+            otpParamsList.forEach((otp: unknown) => {
+                 const otpEntry = otp as { secret?: Uint8Array; name?: string; issuer?: string; algorithm?: number; digits?: number; type?: number; counter?: number };
+                 const secretBase32 = decodeBase32(otpEntry.secret || new Uint8Array());
                  if (!secretBase32 || existingSecrets.has(secretBase32)) return;
 
                  const algorithmMap: Record<number, string> = { 1: 'SHA1', 2: 'SHA256', 3: 'SHA512' };
-                 let alg = algorithmMap[otp.algorithm] || 'SHA1';
+                 const alg = algorithmMap[otpEntry.algorithm || 0] || 'SHA1';
 
                  newItems.push({
                     id: crypto.randomUUID(),
-                    account: otp.name || 'Conta Google Auth',
-                    issuer: otp.issuer || 'Google Authenticator',
+                    account: otpEntry.name || 'Conta Google Auth',
+                    issuer: otpEntry.issuer || 'Google Authenticator',
                     secret: secretBase32,
                     algorithm: alg,
-                    digits: otp.digits === 2 ? 8 : 6,
+                    digits: otpEntry.digits === 2 ? 8 : 6,
                     period: 30,
-                    type: otp.type === 1 ? 'hotp' : 'totp'
+                    type: otpEntry.type === 1 ? 'hotp' : 'totp'
                  });
                  existingSecrets.add(secretBase32);
                  importedCount++;
@@ -305,7 +350,7 @@ ipcMain.handle('import-google-auth', async () => {
 
             return { success: false, error: 'Nenhum token novo encontrado (já existem ou inválidos)' };
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Erro na importação Google Authenticator:', error);
             return { success: false, error: 'Ocorreu um erro inesperado durante a importação.' };
         }
@@ -314,43 +359,43 @@ ipcMain.handle('import-google-auth', async () => {
 });
 
 ipcMain.handle('get-2fa-items', () => {
-    const items = store.get('twoFAItems', []);
+    const items = store.get('twoFAItems', []) as TwoFAItem[];
     return items;
 });
 
-ipcMain.handle('add-2fa-item', (_event, item) => {
-    const items = store.get('twoFAItems', []) as any[];
-    item.id = Date.now().toString();
-    items.push(item);
+ipcMain.handle('add-2fa-item', (_event, item: Omit<TwoFAItem, 'id'>) => {
+    const items = store.get('twoFAItems', []) as TwoFAItem[];
+    const newItem: TwoFAItem = { ...item, id: Date.now().toString() };
+    items.push(newItem);
     store.set('twoFAItems', items);
-    return item;
+    return newItem;
 });
 
-ipcMain.handle('remove-2fa-item', (_event, id) => {
-    const items = store.get('twoFAItems', []) as any[];
-    const filtered = items.filter((item: any) => item.id !== id);
+ipcMain.handle('remove-2fa-item', (_event, id: string) => {
+    const items = store.get('twoFAItems', []) as TwoFAItem[];
+    const filtered = items.filter((item: TwoFAItem) => item.id !== id);
     store.set('twoFAItems', filtered);
     return true;
 });
 
-ipcMain.handle('update-2fa-item', (_event, id, updatedItem) => {
-    const items = store.get('twoFAItems', []) as any[];
-    const index = items.findIndex((item: any) => item.id === id);
+ipcMain.handle('update-2fa-item', (_event, id: string, updatedItem: Partial<TwoFAItem>) => {
+    const items = store.get('twoFAItems', []) as TwoFAItem[];
+    const index = items.findIndex((item: TwoFAItem) => item.id === id);
     if (index >= 0) {
-        items[index] = { ...items[index], ...updatedItem };
+        items[index] = { ...items[index], ...updatedItem } as TwoFAItem;
         store.set('twoFAItems', items);
         return items[index];
     }
     return null;
 });
 
-ipcMain.handle('set-2fa-items', (_event, items) => {
+ipcMain.handle('set-2fa-items', (_event, items: TwoFAItem[]) => {
     store.set('twoFAItems', items);
     return true;
 });
 
 ipcMain.handle('export-2fa', async () => {
-    const items = store.get('twoFAItems', []);
+    const items = store.get('twoFAItems', []) as TwoFAItem[];
     const result = await dialog.showSaveDialog(mainWindow!, {
         defaultPath: `2fa-backup-${new Date().getTime()}.json`,
         filters: [{ name: 'JSON Files', extensions: ['json'] }],
@@ -364,7 +409,7 @@ ipcMain.handle('export-2fa', async () => {
 });
 
 ipcMain.handle('export-2fa-encrypted', async (_event, password) => {
-    const items = store.get('twoFAItems', []);
+    const items = store.get('twoFAItems', []) as TwoFAItem[];
     const result = await dialog.showSaveDialog(mainWindow!, {
         defaultPath: `2fa-backup-encrypted-${new Date().getTime()}.enc`,
         filters: [{ name: 'Encrypted 2FA Backup', extensions: ['enc'] }],
@@ -398,9 +443,9 @@ ipcMain.handle('export-2fa-encrypted', async (_event, password) => {
 
             fs.writeFileSync(result.filePath, JSON.stringify(backupFile));
             return { success: true, path: result.filePath };
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Export encryption error:', error);
-            return { success: false, error: error.message };
+            return { success: false, error: 'Falha ao criptografar o arquivo de backup.' };
         }
     }
     return { success: false };
@@ -417,14 +462,14 @@ ipcMain.handle('import-2fa-encrypted', async (_event, password) => {
             const filePath = result.filePaths[0];
             const fileContent = fs.readFileSync(filePath, 'utf-8');
 
-            let backupData;
+            let backupData: BackupFile | undefined;
             try {
-                backupData = JSON.parse(fileContent);
+                backupData = JSON.parse(fileContent) as BackupFile;
             } catch (e) {
                 return { success: false, error: 'Invalid backup file format' };
             }
 
-            if (!backupData.version || !backupData.salt || !backupData.iv || !backupData.authTag || !backupData.data) {
+            if (!backupData || !backupData.version || !backupData.salt || !backupData.iv || !backupData.authTag || !backupData.data) {
                 return { success: false, error: 'Invalid backup file structure' };
             }
 
@@ -441,29 +486,25 @@ ipcMain.handle('import-2fa-encrypted', async (_event, password) => {
             let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
             decrypted += decipher.final('utf8');
 
-            const importedItems = JSON.parse(decrypted);
+            const importedItems = JSON.parse(decrypted) as TwoFAItem[];
 
             // Assign new IDs to imported items to avoid collisions?
             // Or keep IDs if they are backups. Authy restore keeps context.
             // Let's regenerate IDs to be safe against duplicates if we are merging.
-            const itemsWithIds = importedItems.map((item: any) => ({
+            const itemsWithIds = importedItems.map((item: TwoFAItem) => ({
                 ...item,
                 id: Date.now().toString() + Math.random(),
             }));
 
-            const currentItems = store.get('twoFAItems', []) as any[];
+            const currentItems = store.get('twoFAItems', []) as TwoFAItem[];
             const allItems = [...currentItems, ...itemsWithIds];
             store.set('twoFAItems', allItems);
 
             return { success: true, count: itemsWithIds.length };
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Import decryption error:', error);
-            // Distinguish between bad password and other errors if possible
-            if (error.message.includes('auth tag')) {
-                return { success: false, error: 'Senha incorreta ou arquivo corrompido' };
-            }
-            return { success: false, error: error.message };
+            return { success: false, error: 'Senha incorreta ou arquivo corrompido' };
         }
     }
     return { success: false };
@@ -501,23 +542,25 @@ ipcMain.handle('scan-screen-qr', async () => {
         if (mainWindow) mainWindow.restore();
         return { success: false, error: 'QR Code not found on screen' };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('QR Scan error:', error);
         if (mainWindow) mainWindow.restore();
-        return { success: false, error: error.message };
+        return { success: false, error: 'Falha ao escanear a tela.' };
     }
 });
 
 ipcMain.handle('set-master-password', (_event, password) => {
-    const hash = crypto.createHash('sha256').update(password).digest('hex');
-    store.set('masterPassword', hash);
+    const salt = crypto.randomBytes(32).toString('hex');
+    const hash = crypto.pbkdf2Sync(password, salt, 600000, 32, 'sha256').toString('hex');
+    store.set('masterPassword', { salt, hash });
     return true;
 });
 
 ipcMain.handle('check-master-password', (_event, password) => {
-    const savedHash = store.get('masterPassword');
-    const hash = crypto.createHash('sha256').update(password).digest('hex');
-    return savedHash === hash;
+    const saved = store.get('masterPassword') as { salt: string; hash: string } | undefined;
+    if (!saved) return false;
+    const hash = crypto.pbkdf2Sync(password, saved.salt, 600000, 32, 'sha256').toString('hex');
+    return saved.hash === hash;
 });
 
 ipcMain.handle('has-master-password', () => {
@@ -529,12 +572,12 @@ ipcMain.handle('get-settings', () => {
         minimizeToTray: false,
         runOnStartup: false,
         autoLock: true,
-        autoLockTimeout: 5, // minutes
+        autoLockTimeout: 5,
         blurOnInactive: true
-    });
+    }) as AppSettings;
 });
 
-ipcMain.handle('set-settings', (_event, settings) => {
+ipcMain.handle('set-settings', (_event, settings: AppSettings) => {
     store.set('appSettings', settings);
     app.setLoginItemSettings({
         openAtLogin: !!settings.runOnStartup,
@@ -552,15 +595,15 @@ ipcMain.handle('import-2fa', async () => {
     if (!result.canceled && result.filePaths[0]) {
         const filePath = result.filePaths[0];
         const fileContent = fs.readFileSync(filePath, 'utf-8');
-        const importedItems = JSON.parse(fileContent);
+        const importedItems = JSON.parse(fileContent) as TwoFAItem[];
 
         // Assign new IDs to imported items
-        const itemsWithIds = importedItems.map((item: any) => ({
+        const itemsWithIds = importedItems.map((item: TwoFAItem) => ({
             ...item,
             id: Date.now().toString() + Math.random(),
         }));
 
-        const currentItems = store.get('twoFAItems', []) as any[];
+        const currentItems = store.get('twoFAItems', []) as TwoFAItem[];
         const allItems = [...currentItems, ...itemsWithIds];
         store.set('twoFAItems', allItems);
 
@@ -581,16 +624,29 @@ ipcMain.handle('import-authy', async () => {
             const filePath = result.filePaths[0];
             const fileContent = fs.readFileSync(filePath, 'utf-8');
             let importedCount = 0;
-            const currentItems = store.get('twoFAItems', []) as any[];
+            const currentItems = store.get('twoFAItems', []) as TwoFAItem[];
             const existingSecrets = new Set(currentItems.map(i => i.secret));
-            const newItems: any[] = [];
+            const newItems: TwoFAItem[] = [];
 
-            // Function to normalize and add item if not duplicate
-            const addItem = (entry: any) => {
+            interface ImportEntry {
+                secret?: string;
+                decrypted_seed?: string;
+                seed?: string;
+                name?: string;
+                account?: string;
+                label?: string;
+                issuer?: string;
+                provider?: string;
+                algorithm?: string;
+                digits?: number;
+                period?: number;
+                type?: string;
+            }
+
+            const addItem = (entry: ImportEntry) => {
                 const secret = (entry.secret || entry.decrypted_seed || entry.seed || '').replace(/\s+/g, '').toUpperCase();
                 if (!secret) return;
 
-                // Avoid duplicates by secret
                 if (existingSecrets.has(secret)) return;
 
                 newItems.push({
@@ -609,19 +665,22 @@ ipcMain.handle('import-authy', async () => {
 
             // 1. Try JSON parsing
             try {
-                const data = JSON.parse(fileContent);
-                let entries = [];
+                const data = JSON.parse(fileContent) as unknown;
+                let entries: ImportEntry[] = [];
 
                 if (Array.isArray(data)) {
-                    entries = data;
-                } else if (data.entries && Array.isArray(data.entries)) {
-                    entries = data.entries;
-                } else if (data.tokens && Array.isArray(data.tokens)) {
-                    entries = data.tokens;
-                } else if (data.items && Array.isArray(data.items)) {
-                    entries = data.items;
-                } else {
-                    entries = [data]; // Single object
+                    entries = data as ImportEntry[];
+                } else if (data && typeof data === 'object') {
+                    const obj = data as Record<string, unknown>;
+                    if (Array.isArray(obj.entries)) {
+                        entries = obj.entries as ImportEntry[];
+                    } else if (Array.isArray(obj.tokens)) {
+                        entries = obj.tokens as ImportEntry[];
+                    } else if (Array.isArray(obj.items)) {
+                        entries = obj.items as ImportEntry[];
+                    } else {
+                        entries = [obj as ImportEntry];
+                    }
                 }
 
                 entries.forEach(addItem);
@@ -644,7 +703,7 @@ ipcMain.handle('import-authy', async () => {
                                     secret: parsed.secret.base32,
                                     algorithm: parsed.algorithm,
                                     digits: parsed.digits,
-                                    period: parsed instanceof OTPAuth.TOTP ? (parsed as any).period : 30,
+                                    period: parsed instanceof OTPAuth.TOTP ? (parsed as OTPAuth.TOTP).period : 30,
                                     type: 'totp'
                                 });
                             }
@@ -665,9 +724,9 @@ ipcMain.handle('import-authy', async () => {
 
             return { success: false, error: 'Nenhum token válido encontrado no arquivo.' };
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Erro na importação Authy:', error);
-            return { success: false, error: error.message };
+            return { success: false, error: 'Ocorreu um erro durante a importação.' };
         }
     }
     return { success: false };
