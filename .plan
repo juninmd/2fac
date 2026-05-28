@@ -1,0 +1,131 @@
+# Modernization Plan for juninmd/2fac
+
+## Current State Assessment
+
+**Good news:** The codebase is already 95% modernized:
+- All 33 source files in `src/` are already TypeScript (.ts/.tsx)
+- All source code already uses ES Module syntax (import/export)
+- async/await is used throughout (238 occurrences), no .then() chains
+- Only 3 JS files exist: `webpack.config.js`, `jest.config.js`, `.eslintrc.js` (all root config files)
+
+**Remaining work:**
+1. Replace `any` types with proper types (~22 occurrences)
+2. Convert 3 config files from CommonJS to ESM (where tooling permits)
+3. Add missing type for `__mocks__/fileMock.js` referenced in jest.config.js
+
+---
+
+## Phase 1: Eliminate `any` Types
+
+### 1a. `src/renderer/types.ts` — Define proper IPC return types
+- Replace `add2FAItem: (item: any) => Promise<any>` with proper types
+- Replace `update2FAItem: (id: string, item: any) => Promise<any>` with proper types
+- Import `TwoFAItem` is already defined in this file; use `Omit<TwoFAItem, 'id'>` for add and `Partial<TwoFAItem>` for update
+
+### 1b. `src/preload/preload.ts` — Type IPC bridge parameters
+- Replace `item: any` in `add2FAItem` with `item: Omit<TwoFAItem, 'id'>`
+- Replace `item: any` in `update2FAItem` with `item: Partial<TwoFAItem>`
+- Replace `items: any[]` in `set2FAItems` with `items: TwoFAItem[]`
+- Replace `settings: any` in `setSettings` with `settings: AppSettings`
+- Replace `_: any` in `onProtocolUrl` subscription with `_Electron.IpcRendererEvent` or `Electron.IpcRendererEvent`
+- Import types from `../main/types` (or duplicate relevant ones)
+
+### 1c. `src/renderer/components/AddItemForm.tsx` — Remove `as any` casts
+- Lines 54, 97, 100, 101, 140, 186: Replace `as any` casts with proper string literal union types
+- Define `Algorithm = 'SHA1' | 'SHA256' | 'SHA512'`, `Encoding = 'base32' | 'base64' | 'ascii'`, `OTPType = 'totp' | 'hotp'`
+- Update `TwoFAItem` in `src/renderer/types.ts` to use these union types instead of `string`
+
+### 1d. `src/renderer/components/Settings.tsx` — Type setting change handler
+- Replace `value: any` in `handleSettingChange` with `AppSettings[keyof AppSettings]`
+- This is a polymorphic setter; use a generic or `AppSettings[K]` pattern
+
+### 1e. Test files — Type mock properties
+- `ItemList.test.tsx` lines 11, 20: Replace `(props: any)` and `({ children }: any)` with proper component prop types
+- `App.test.tsx` line 701: The `require` is inside a test and acceptable; leave as-is (test code)
+
+---
+
+## Phase 2: Config File Migration (CommonJS → ESM)
+
+### 2a. `package.json` — Add `"type": "module"`
+- Add `"type": "module"` to enable ESM for .js config files
+- **Risk:** This affects how Node.js resolves all .js files. Must verify Electron and build tools handle this.
+
+### 2b. `webpack.config.js` → Convert to ESM syntax
+- Replace `const webpack = require('webpack')` → `import webpack from 'webpack'`
+- Replace `const path = require('path')` → `import path from 'path'`
+- Replace `const HtmlWebpackPlugin = require('html-webpack-plugin')` → `import HtmlWebpackPlugin from 'html-webpack-plugin'`
+- Replace `module.exports = {` → `export default {`
+- Replace `require.resolve(...)` in fallback with `import.meta.resolve(...)` or keep as-is (webpack handles require.resolve internally)
+- **Note:** `require.resolve()` in the `fallback` section is used by webpack at build time. We need to check if webpack supports ESM config. If not, keep this file as CJS.
+
+### 2c. `jest.config.js` → Convert to ESM syntax
+- Replace `module.exports = {` → `export default {`
+- **Risk:** Jest has limited ESM support. `ts-jest` may not work with ESM config. May need to use `jest.config.ts` instead, or keep as CJS.
+
+### 2d. `.eslintrc.js` → Convert to `.eslintrc.cjs` or flat config
+- ESLint 8.x does not support ESM config files natively
+- Best approach: rename to `.eslintrc.cjs` (CommonJS explicitly) or migrate to flat config (`eslint.config.js`)
+- Since the project uses ESLint 8, renaming to `.eslintrc.cjs` is safest
+
+### 2e. Decision Point: Keep Config Files as CJS
+Given the risks with ESM migration of config files (Jest, webpack, ESLint all have varying ESM support), the safest approach is:
+- **Keep** `webpack.config.js` and `jest.config.js` as CommonJS (they work)
+- **Rename** `.eslintrc.js` → `.eslintrc.cjs` for explicitness
+- Focus the ESM effort on ensuring `tsconfig.json` and `package.json` are properly configured
+
+---
+
+## Phase 3: TypeScript Configuration Updates
+
+### 3a. `tsconfig.json` — Consider ESM module output
+- Currently `"module": "commonjs"` — this is required for Electron main process (Node.js)
+- The renderer is bundled by webpack, so tsconfig module setting doesn't affect it
+- **Decision:** Keep `"module": "commonjs"` for main process compatibility. ESM output would break Electron's require of the compiled main.js.
+
+### 3b. `tsconfig.json` — Enable stricter options
+- Add `"noUncheckedIndexedAccess": true` for safer array/object access
+- Add `"noFallthroughCasesInSwitch": true`
+- Add `"exactOptionalPropertyTypes": true` (optional)
+
+---
+
+## Phase 4: Missing File Creation
+
+### 4a. Create `__mocks__/fileMock.js`
+- jest.config.js references `<rootDir>/__mocks__/fileMock.js` but it doesn't exist
+- Create a simple mock: `module.exports = 'test-file-stub';`
+
+---
+
+## Files to Modify
+
+| File | Change |
+|------|--------|
+| `src/renderer/types.ts` | Add union types, fix `any` in ElectronAPI |
+| `src/preload/preload.ts` | Replace `any` with proper types |
+| `src/renderer/components/AddItemForm.tsx` | Remove `as any` casts |
+| `src/renderer/components/Settings.tsx` | Type `handleSettingChange` properly |
+| `src/renderer/components/ItemList.test.tsx` | Type mock component props |
+| `tsconfig.json` | Add stricter compiler options |
+| `.eslintrc.js` → `.eslintrc.cjs` | Rename for explicitness |
+| `__mocks__/fileMock.js` | Create missing mock file |
+| `package.json` | (No `"type": "module"` — too risky for Electron) |
+
+## Files NOT Modified (with rationale)
+
+| File | Rationale |
+|------|-----------|
+| `webpack.config.js` | Webpack 5 config works as CJS; ESM migration risky |
+| `jest.config.js` | Jest ESM support is experimental; CJS is stable |
+| `src/main/main.ts` | Already well-typed, no `any` usage |
+| `src/main/crypto.ts` | Already well-typed |
+| `src/main/store.ts` | Already well-typed |
+| `src/main/importers.ts` | Already well-typed |
+
+## Verification Steps
+
+1. Run `npx tsc --noEmit` to verify no type errors
+2. Run `npm test` to verify all tests pass
+3. Run `npm run build` to verify build succeeds
+4. Manually verify `any` count is reduced to 0 in source files (test mocks excepted)
