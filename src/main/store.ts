@@ -1,6 +1,7 @@
 import Store from 'electron-store';
 import { TwoFAItem, AppSettings } from './types';
 import { generateId } from './crypto';
+import { generateId } from './crypto';
 
 const store = new Store();
 
