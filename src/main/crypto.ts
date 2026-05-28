@@ -2,7 +2,7 @@ import * as crypto from 'crypto';
 import { TwoFAItem } from './types';
 
 export function generateId(): string {
-    return Date.now().toString() + Math.random();
+    return crypto.randomUUID();
 }
 
 export function hashPassword(password: string): string {
@@ -46,7 +46,7 @@ export function decryptData(encryptedData: string, password: string, saltHex: st
     return decrypted;
 }
 
-export function decodeBase32(buffer: Uint8Array): string {
+export function encodeBase32(buffer: Uint8Array): string {
     const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
     let bits = 0;
     let value = 0;
