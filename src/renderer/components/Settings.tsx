@@ -51,6 +51,7 @@ const Settings: React.FC<SettingsProps> = ({
     };
 
     const handleSettingChange = async (key: keyof AppSettings, value: boolean | string | number) => {
+        if (!settings) return;
         const newSettings = { ...settings, [key]: value };
         setSettings(newSettings);
         await window.electron.setSettings(newSettings);
