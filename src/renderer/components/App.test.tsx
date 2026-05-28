@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import App from './App';
-import { TwoFAItem } from '../types';
+import App from './App.js';
+import { TwoFAItem } from '../types.js';
 
 // Mock utils
 jest.mock('../utils/arrayUtils', () => ({

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import * as OTPAuth from 'otpauth';
-import { TwoFAItem } from '../types';
+import { TwoFAItem } from '../types.js';
 
 export const useToken = (item: TwoFAItem) => {
     const [token, setToken] = useState<string>('');

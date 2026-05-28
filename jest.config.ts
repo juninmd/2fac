@@ -1,18 +1,24 @@
-module.exports = {
+import type { Config } from 'jest';
+
+const config: Config = {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
-    '\\.(jpg|jpeg|png|gif|webp|svg)$': '<rootDir>/__mocks__/fileMock.js'
+    '\\.(jpg|jpeg|png|gif|webp|svg)$': '<rootDir>/__mocks__/fileMock.js',
   },
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
-      tsconfig: 'tsconfig.json',
+      tsconfig: 'tsconfig.jest.json',
+      diagnostics: {
+        ignoreCodes: [151002],
+      },
     }],
   },
   testMatch: [
-    '**/src/renderer/**/*.test.{ts,tsx}'
+    '**/src/renderer/**/*.test.{ts,tsx}',
   ],
   collectCoverage: true,
   collectCoverageFrom: [
@@ -30,3 +36,5 @@ module.exports = {
     },
   },
 };
+
+export default config;

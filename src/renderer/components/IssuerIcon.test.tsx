@@ -1,6 +1,6 @@
 import React from 'react';
 import { render } from '@testing-library/react';
-import IssuerIcon from './IssuerIcon';
+import IssuerIcon from './IssuerIcon.js';
 
 describe('IssuerIcon', () => {
     const icons = [

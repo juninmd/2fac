@@ -3,9 +3,9 @@ import * as crypto from 'crypto';
 import * as OTPAuth from 'otpauth';
 import * as protobuf from 'protobufjs';
 import Store from 'electron-store';
-import { TwoFAItem, ImportResult, AlgorithmMap } from './types';
-import { getExistingSecrets, appendItems, generateItemId } from './store';
-import { decryptData, validateEncryptedBackup } from './crypto';
+import { TwoFAItem, ImportResult, AlgorithmMap } from './types.js';
+import { getExistingSecrets, appendItems, generateItemId } from './store.js';
+import { decryptData, validateEncryptedBackup } from './crypto.js';
 
 const ALGORITHM_MAP: AlgorithmMap = { 1: 'SHA1', 2: 'SHA256', 3: 'SHA512' };
 

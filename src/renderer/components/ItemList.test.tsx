@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import ItemList from './ItemList';
-import { TwoFAItem } from '../types';
+import ItemList from './ItemList.js';
+import { TwoFAItem } from '../types.js';
 
 // Mock dependencies
 jest.mock('./Item', () => {

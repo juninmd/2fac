@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
-import { useToken } from './useToken';
-import { TwoFAItem } from '../types';
+import { useToken } from './useToken.js';
+import { TwoFAItem } from '../types.js';
 import * as OTPAuth from 'otpauth';
 
 // Mock otpauth

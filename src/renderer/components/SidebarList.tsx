@@ -1,8 +1,8 @@
 import React from 'react';
-import { TwoFAItem } from '../types';
+import { TwoFAItem } from '../types.js';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import IssuerIcon from './IssuerIcon';
+import IssuerIcon from './IssuerIcon.js';
 
 interface SidebarListProps {
     items: TwoFAItem[];

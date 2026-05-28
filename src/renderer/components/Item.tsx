@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { TwoFAItem } from '../types';
-import { useToken } from '../hooks/useToken';
-import { COLORS } from '../constants';
-import IssuerIcon from './IssuerIcon';
+import { TwoFAItem } from '../types.js';
+import { useToken } from '../hooks/useToken.js';
+import { COLORS } from '../constants.js';
+import IssuerIcon from './IssuerIcon.js';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 

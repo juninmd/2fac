@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AppSettings } from '../types';
+import { AppSettings } from '../types.js';
 
 interface SettingsProps {
     onClose: () => void;
@@ -50,7 +50,7 @@ const Settings: React.FC<SettingsProps> = ({
         setSettings(loaded);
     };
 
-    const handleSettingChange = async (key: keyof AppSettings, value: any) => {
+    const handleSettingChange = async (key: keyof AppSettings, value: boolean | string | number) => {
         const newSettings = { ...settings, [key]: value };
         setSettings(newSettings);
         await window.electron.setSettings(newSettings);

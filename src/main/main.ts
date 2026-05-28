@@ -2,7 +2,13 @@ import { app, BrowserWindow, Menu, ipcMain, dialog, desktopCapturer, Tray, nativ
 import * as path from 'path';
 import * as fs from 'fs';
 import Store from 'electron-store';
-import jsQR from 'jsqr';
+import { createRequire } from 'node:module';
+import type { Options as JsQROptions, QRCode } from 'jsqr';
+
+const _require = createRequire(import.meta.url);
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const jsqrModule: { default: (data: Uint8ClampedArray, width: number, height: number, providedOptions?: JsQROptions) => QRCode | null } = _require('jsqr');
+const jsQR = jsqrModule.default;
 import {
     createStore,
     getTwoFAItems,
@@ -12,15 +18,15 @@ import {
     updateTwoFAItem,
     getAppSettings,
     setAppSettings,
-} from './store';
-import { hashPassword, encryptData } from './crypto';
+} from './store.js';
+import { hashPassword, encryptData } from './crypto.js';
 import {
     importGoogleAuth,
     importAuthy,
     importEncrypted,
     importPlain,
-} from './importers';
-import { TwoFAItem, AppSettings } from './types';
+} from './importers.js';
+import { TwoFAItem, AppSettings } from './types.js';
 
 const isDev = process.env.NODE_ENV === 'development';
 app.disableHardwareAcceleration();

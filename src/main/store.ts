@@ -1,5 +1,5 @@
 import Store from 'electron-store';
-import { TwoFAItem, AppSettings } from './types';
+import { TwoFAItem, AppSettings } from './types.js';
 
 const DEFAULT_SETTINGS: AppSettings = {
     minimizeToTray: false,

@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
-import { reorder } from '../utils/arrayUtils';
-import { TwoFAItem } from '../types';
-import ItemList from './ItemList';
-import AddItemForm from './AddItemForm';
-import LockScreen from './LockScreen';
-import Settings from './Settings';
-import SidebarList from './SidebarList';
-import TokenDetail from './TokenDetail';
+import { reorder } from '../utils/arrayUtils.js';
+import { TwoFAItem, AppSettings } from '../types.js';
+import ItemList from './ItemList.js';
+import AddItemForm from './AddItemForm.js';
+import LockScreen from './LockScreen.js';
+import Settings from './Settings.js';
+import SidebarList from './SidebarList.js';
+import TokenDetail from './TokenDetail.js';
 import './App.css';
 
 const App: React.FC = () => {
@@ -20,7 +20,7 @@ const App: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [sidebarMode, setSidebarMode] = useState<'none' | 'add'>('none');
     const [showSettings, setShowSettings] = useState(false);
-    const [settings, setSettings] = useState<any>(null);
+    const [settings, setSettings] = useState<AppSettings | null>(null);
     const [isWindowFocused, setIsWindowFocused] = useState(true);
     const [pendingUri, setPendingUri] = useState<string | null>(null);
 

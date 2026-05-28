@@ -1,4 +1,4 @@
-import { reorder } from './arrayUtils';
+import { reorder } from './arrayUtils.js';
 
 describe('arrayUtils', () => {
   describe('reorder', () => {

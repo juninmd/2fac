@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import AddItemForm from './AddItemForm';
-import { COLORS } from '../constants';
+import AddItemForm from './AddItemForm.js';
+import { COLORS } from '../constants.js';
 
 // Mock window.electron
 const mockScanScreenQR = jest.fn();

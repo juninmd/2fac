@@ -1,5 +1,5 @@
 import React from 'react';
-import { getBrandKey } from '../utils/brandUtils';
+import { getBrandKey } from '../utils/brandUtils.js';
 
 const ICONS: Record<string, JSX.Element> = {
     // Google (G)

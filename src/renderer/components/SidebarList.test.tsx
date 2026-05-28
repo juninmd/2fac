@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import SidebarList from './SidebarList';
-import { TwoFAItem } from '../types';
+import SidebarList from './SidebarList.js';
+import { TwoFAItem } from '../types.js';
 
 // Mock dnd-kit
 const mockUseSortable = jest.fn();

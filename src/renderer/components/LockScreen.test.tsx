@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import LockScreen from './LockScreen';
+import LockScreen from './LockScreen.js';
 
 // Mock window.electron
 const mockHasMasterPassword = jest.fn();

@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import { EncryptedBackup } from './types';
+import { EncryptedBackup } from './types.js';
 
 const ENCRYPTION_ALGORITHM = 'aes-256-gcm';
 const KEY_LENGTH = 32;

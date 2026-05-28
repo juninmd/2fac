@@ -1,7 +1,7 @@
 import React from 'react';
-import { TwoFAItem } from '../types';
+import { TwoFAItem } from '../types.js';
 import { SortableContext, rectSortingStrategy, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import Item from './Item';
+import Item from './Item.js';
 
 interface ItemListProps {
     items: TwoFAItem[];

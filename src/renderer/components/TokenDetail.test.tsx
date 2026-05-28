@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import TokenDetail from './TokenDetail';
-import { TwoFAItem } from '../types';
+import TokenDetail from './TokenDetail.js';
+import { TwoFAItem } from '../types.js';
 
 // Mock useToken
 const mockUseToken = jest.fn();

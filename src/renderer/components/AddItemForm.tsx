@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import * as OTPAuth from 'otpauth';
-import { TwoFAItem } from '../types';
-import { COLORS } from '../constants';
-import { getBrandColor } from '../utils/brandUtils';
-import IssuerIcon from './IssuerIcon';
+import { TwoFAItem } from '../types.js';
+import { COLORS } from '../constants.js';
+import { getBrandColor } from '../utils/brandUtils.js';
+import IssuerIcon from './IssuerIcon.js';
 
 interface AddItemFormProps {
     onAdd: (item: Omit<TwoFAItem, 'id'>) => void;
@@ -51,7 +51,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd, initialUri }) => {
                         account: parsed.label || prev.account,
                         issuer: parsed.issuer || prev.issuer,
                         secret: secret,
-                        algorithm: (parsed.algorithm || 'SHA1') as any,
+                        algorithm: (parsed.algorithm || 'SHA1'),
                         digits: (parsed.digits || 6).toString(),
                         period: (parsed instanceof OTPAuth.TOTP ? parsed.period : 30).toString(),
                         encoding: 'base32',
@@ -94,11 +94,11 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd, initialUri }) => {
             issuer: formData.issuer.trim(),
             secret: formData.secret.trim().replace(/\s/g, ''),
             description: formData.description.trim(),
-            algorithm: formData.algorithm as any,
+            algorithm: formData.algorithm,
             digits: parseInt(formData.digits),
             period: parseInt(formData.period),
-            encoding: formData.encoding as any,
-            type: formData.type as any,
+            encoding: formData.encoding,
+            type: formData.type,
             color: formData.color,
             category: formData.category.trim(),
         });
@@ -137,7 +137,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd, initialUri }) => {
                         account: parsed.label || prev.account,
                         issuer: parsed.issuer || prev.issuer,
                         secret: secret,
-                        algorithm: (parsed.algorithm || 'SHA1') as any,
+                        algorithm: (parsed.algorithm || 'SHA1'),
                         digits: (parsed.digits || 6).toString(),
                         period: (parsed instanceof OTPAuth.TOTP ? parsed.period : 30).toString(),
                         encoding: 'base32',
@@ -183,7 +183,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd, initialUri }) => {
                              account: parsed.label || prev.account,
                              issuer: parsed.issuer || prev.issuer,
                              secret: secret,
-                             algorithm: (parsed.algorithm || 'SHA1') as any,
+                             algorithm: (parsed.algorithm || 'SHA1'),
                              digits: (parsed.digits || 6).toString(),
                              period: (parsed instanceof OTPAuth.TOTP ? parsed.period : 30).toString(),
                              encoding: 'base32',
