@@ -34,14 +34,16 @@ export function parseJsonContent(fileContent: string): Partial<TwoFAItem>[] {
 
     if (Array.isArray(data)) {
         entries = data;
-    } else if (data.entries && Array.isArray(data.entries)) {
-        entries = data.entries;
-    } else if (data.tokens && Array.isArray(data.tokens)) {
-        entries = data.tokens;
-    } else if (data.items && Array.isArray(data.items)) {
-        entries = data.items;
-    } else {
-        entries = [data];
+    } else if (data && typeof data === 'object') {
+        if (data.entries && Array.isArray(data.entries)) {
+            entries = data.entries;
+        } else if (data.tokens && Array.isArray(data.tokens)) {
+            entries = data.tokens;
+        } else if (data.items && Array.isArray(data.items)) {
+            entries = data.items;
+        } else {
+            entries = [data];
+        }
     }
 
     return entries;
