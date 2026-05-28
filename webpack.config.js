@@ -1,6 +1,9 @@
 import webpack from 'webpack';
 import path from 'path';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
 
 export default {
     entry: './src/renderer/index.tsx',
