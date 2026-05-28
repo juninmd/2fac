@@ -44,7 +44,7 @@ enum OtpType {
 const root = protobuf.parse(GOOGLE_AUTH_PROTO).root;
 const MigrationPayload = root.lookupType('MigrationPayload');
 
-const decodeBase32 = (buffer: Uint8Array): string => {
+const encodeBase32 = (buffer: Uint8Array): string => {
     const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
     let bits = 0;
     let value = 0;
@@ -113,7 +113,7 @@ export const importGoogleAuth = async (filePath: string, store: Store): Promise<
         const existingSecrets = getExistingSecrets(store);
 
         for (const otp of message.otpParameters) {
-            const secretBase32 = decodeBase32(otp.secret);
+            const secretBase32 = encodeBase32(otp.secret);
             const item = createTwoFAItem(
                 {
                     account: otp.name || 'Conta Google Auth',
@@ -150,6 +150,7 @@ export const importAuthy = async (filePath: string, store: Store): Promise<Impor
         const newItems: TwoFAItem[] = [];
 
         const addItem = (entry: Record<string, unknown>): void => {
+            if (!entry || typeof entry !== 'object') return;
             const item = createTwoFAItem(
                 {
                     account: (entry.name as string) || (entry.account as string) || (entry.label as string),
