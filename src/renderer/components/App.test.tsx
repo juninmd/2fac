@@ -693,21 +693,12 @@ describe('App', () => {
     });
 
     it('handles drag end with missing index', async () => {
-        render(<App />);
-        fireEvent.click(screen.getByText('Unlock'));
-        await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
+      render(<App />);
+      fireEvent.click(screen.getByText('Unlock'));
+      await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
-        // Add a button inside dnd-kit mock to simulate missing item id
-        const DragEndComponent = require('@dnd-kit/core').DndContext;
-
-        // Instead of overriding mock, just call the prop directly if we had it.
-        // The mock exposes a button `trigger-drag-end` with valid IDs. We need one with invalid IDs.
-        // We'll just temporarily update the mock or use a workaround.
-        // Actually, we can't easily change the mock here without re-importing.
-        // But we can trigger an event that wouldn't find the item if we just remove the item first.
-
-        // Remove item 1
-        fireEvent.click(screen.getByText('Remove 1'));
+      // Remove item 1
+      fireEvent.click(screen.getByText('Remove 1'));
         await waitFor(() => expect(mockRemove2FAItem).toHaveBeenCalledWith('1'));
 
         // Now trigger drag end which involves ID '1' and '2'. ID '1' is gone.
