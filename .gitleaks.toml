@@ -1,0 +1,143 @@
+# Gitleaks configuration for 2FAC
+# https://github.com/gitleaks/gitleaks
+
+title = "2FAC Secret Scanning Configuration"
+
+[allowlist]
+  description = "Global allowlist"
+  paths = [
+    '''node_modules''',
+    '''dist''',
+    '''\.min\.js$''',
+    '''package-lock\.json$''',
+    '''pnpm-lock\.yaml$''',
+  ]
+
+[[rules]]
+  id = "github-personal-access-token"
+  description = "GitHub Personal Access Token"
+  regex = '''ghp_[0-9a-zA-Z]{36}'''
+  tags = ["token", "github"]
+
+[[rules]]
+  id = "github-oauth-access-token"
+  description = "GitHub OAuth Access Token"
+  regex = '''gho_[0-9a-zA-Z]{36}'''
+  tags = ["token", "github", "oauth"]
+
+[[rules]]
+  id = "github-app-token"
+  description = "GitHub App Token"
+  regex = '''(ghu|ghs)_[0-9a-zA-Z]{36}'''
+  tags = ["token", "github"]
+
+[[rules]]
+  id = "github-refresh-token"
+  description = "GitHub Refresh Token"
+  regex = '''ghr_[0-9a-zA-Z]{36}'''
+  tags = ["token", "github", "refresh"]
+
+[[rules]]
+  id = "npm-access-token"
+  description = "npm Access Token"
+  regex = '''npm_[A-Za-z0-9]{36}'''
+  tags = ["token", "npm"]
+
+[[rules]]
+  id = "private-key"
+  description = "Private Key"
+  regex = '''-----BEGIN (RSA |EC |DSA )?PRIVATE KEY-----'''
+  tags = ["key", "private"]
+
+[[rules]]
+  id = "password-in-url"
+  description = "Password in URL"
+  regex = '''[A-Za-z]{3,10}://[^/\s:@]{3,40}:[^/\s:@]{3,40}@.{100}'''
+  tags = ["password", "url"]
+
+[[rules]]
+  id = "generic-api-key"
+  description = "Generic API Key"
+  regex = '''(?i)(api[_-]?key|apikey)['":\s=]+['"]?[0-9a-zA-Z]{32,45}['"]?'''
+  tags = ["key", "api"]
+
+[[rules]]
+  id = "generic-secret"
+  description = "Generic Secret"
+  regex = '''(?i)(secret|token|password|credential)['":\s=]+['"]?[0-9a-zA-Z]{32,45}['"]?'''
+  tags = ["secret", "generic"]
+
+[[rules]]
+  id = "aws-access-key"
+  description = "AWS Access Key"
+  regex = '''(?:A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
+  tags = ["key", "aws"]
+
+[[rules]]
+  id = "aws-secret-key"
+  description = "AWS Secret Access Key"
+  regex = '''(?i)aws_secret_access_key['":\s=]+['"]?[0-9a-zA-Z/+=]{40}['"]?'''
+  tags = ["secret", "aws"]
+
+[[rules]]
+  id = "google-api-key"
+  description = "Google API Key"
+  regex = '''AIza[0-9A-Za-z\-_]{35}'''
+  tags = ["key", "google"]
+
+[[rules]]
+  id = "google-oauth-id"
+  description = "Google OAuth ID"
+  regex = '''[0-9]+-[0-9A-Za-z_]{32}\.apps\.googleusercontent\.com'''
+  tags = ["key", "google", "oauth"]
+
+[[rules]]
+  id = "heroku-api-key"
+  description = "Heroku API Key"
+  regex = '''(?i)heroku[_-]?api[_-]?key['":\s=]+['"]?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}['"]?'''
+  tags = ["key", "heroku"]
+
+[[rules]]
+  id = "slack-webhook-url"
+  description = "Slack Webhook URL"
+  regex = '''https://hooks\.slack\.com/services/T[a-zA-Z0-9_]{8}/B[a-zA-Z0-9_]{8}/[a-zA-Z0-9_]{24}'''
+  tags = ["webhook", "slack"]
+
+[[rules]]
+  id = "twilio-api-key"
+  description = "Twilio API Key"
+  regex = '''SK[0-9a-fA-F]{32}'''
+  tags = ["key", "twilio"]
+
+[[rules]]
+  id = "age-secret-key"
+  description = "Age Secret Key"
+  regex = '''AGE-SECRET-KEY-[0-9A-Z]{59}'''
+  tags = ["key", "age", "encryption"]
+]
+
+# Custom rules for 2FAC specific patterns
+[[rules]]
+  id = "otp-secret"
+  description = "OTP/TOTP Secret (Base32)"
+  regex = '''(?i)(otp|totp|2fa)[_\-]?secret['":\s=]+['"]?[A-Z2-7]{16,64}['"]?'''
+  tags = ["secret", "otp", "2fa"]
+  [rules.allowlist]
+    paths = [
+      '''\.test\.[tj]sx?$''',
+      '''__tests__''',
+      '''test-results'''
+    ]
+
+# File allowlists for test files
+[[rules]]
+  id = "test-secret"
+  description = "Test Secret (allowed in tests)"
+  regex = '''(?i)(secret|password|token)['":\s=]+['"]?test[_-]?(secret|password|token)['"]?'''
+  tags = ["test"]
+  [rules.allowlist]
+    paths = [
+      '''\.test\.[tj]sx?$''',
+      '''__tests__''',
+      '''test-results'''
+    ]
