@@ -1,5 +1,6 @@
 import Store from 'electron-store';
 import { TwoFAItem, AppSettings } from './types';
+import { generateId } from './crypto';
 
 const store = new Store();
 
@@ -14,7 +15,7 @@ export function setTwoFAItems(items: TwoFAItem[]): void {
 export function addTwoFAItem(item: Omit<TwoFAItem, 'id'>): TwoFAItem {
     const newItem: TwoFAItem = {
         ...item,
-        id: Date.now().toString(),
+        id: generateId(),
     };
     const items = getTwoFAItems();
     items.push(newItem);
