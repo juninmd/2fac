@@ -23,7 +23,7 @@ export const addTwoFAItem = (store: Store, item: Omit<TwoFAItem, 'id'>): TwoFAIt
     const items = getTwoFAItems(store);
     const newItem: TwoFAItem = {
         ...item,
-        id: Date.now().toString(),
+        id: generateItemId(),
     };
     items.push(newItem);
     setTwoFAItems(store, items);
