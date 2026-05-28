@@ -5,7 +5,7 @@ import { TwoFAItem } from '../types';
 
 // Mock dependencies
 jest.mock('./Item', () => {
-  const React = require('react');
+  import React from 'react';
   return {
     __esModule: true,
     default: (props: any) => React.createElement('div', {
@@ -15,7 +15,7 @@ jest.mock('./Item', () => {
 });
 
 jest.mock('@dnd-kit/sortable', () => {
-    const React = require('react');
+    import React from 'react';
     return {
         SortableContext: ({ children }: any) => React.createElement('div', { 'data-testid': 'sortable-context' }, children),
         rectSortingStrategy: {},

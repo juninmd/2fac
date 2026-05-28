@@ -267,11 +267,15 @@ const App: React.FC = () => {
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
 
-        if (oldIndex !== -1 && newIndex !== -1) {
-            const newItems = reorder(items, oldIndex, newIndex);
-            setItems(newItems);
-            window.electron.set2FAItems(newItems).catch(console.error);
-        }
+         if (oldIndex !== -1 && newIndex !== -1) {
+             const newItems = reorder(items, oldIndex, newIndex);
+             setItems(newItems);
+             try {
+                 await window.electron.set2FAItems(newItems);
+             } catch (error) {
+                 console.error('Failed to update order', error);
+             }
+         }
     };
 
     const handleExport = async () => {

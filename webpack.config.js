@@ -1,8 +1,8 @@
-const webpack = require('webpack');
-const path = require('path');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
+import webpack from 'webpack';
+import path from 'path';
+import HtmlWebpackPlugin from 'html-webpack-plugin';
 
-module.exports = {
+export default {
     entry: './src/renderer/index.tsx',
     output: {
         path: path.resolve(__dirname, 'dist/renderer'),
@@ -25,13 +25,13 @@ module.exports = {
     resolve: {
         extensions: ['.tsx', '.ts', '.js'],
         fallback: {
-            crypto: require.resolve('crypto-browserify'),
-            stream: require.resolve('stream-browserify'),
-            util: require.resolve('util/'),
-            url: require.resolve('url/'),
-            buffer: require.resolve('buffer/'),
-            vm: require.resolve('vm-browserify'),
-            process: require.resolve('process/browser'),
+            crypto: path.resolve(require.resolve('crypto-browserify')),
+            stream: path.resolve(require.resolve('stream-browserify')),
+            util: path.resolve(require.resolve('util/')),
+            url: path.resolve(require.resolve('url/')),
+            buffer: path.resolve(require.resolve('buffer/')),
+            vm: path.resolve(require.resolve('vm-browserify')),
+            process: path.resolve(require.resolve('process/browser')),
         },
     },
     devServer: {
