@@ -68,18 +68,18 @@ const createTwoFAItem = (
     data: Partial<TwoFAItem>,
     existingSecrets: Set<string>
 ): TwoFAItem | null => {
-    const secret = (data.secret || '').replace(/\s+/g, '').toUpperCase();
+    const secret = (data.secret ?? '').replace(/\s+/g, '').toUpperCase();
     if (!secret || existingSecrets.has(secret)) return null;
 
     const item: TwoFAItem = {
         id: generateItemId(),
-        account: data.account || 'Conta Importada',
-        issuer: data.issuer || 'Importado',
+        account: data.account ?? 'Conta Importada',
+        issuer: data.issuer ?? 'Importado',
         secret,
-        algorithm: data.algorithm || 'SHA1',
-        digits: data.digits || 6,
-        period: data.period || 30,
-        type: data.type || 'totp',
+        algorithm: data.algorithm ?? 'SHA1',
+        digits: data.digits ?? 6,
+        period: data.period ?? 30,
+        type: data.type ?? 'totp',
     };
 
     existingSecrets.add(secret);
@@ -116,10 +116,10 @@ export const importGoogleAuth = async (filePath: string, store: Store): Promise<
             const secretBase32 = encodeBase32(otp.secret);
             const item = createTwoFAItem(
                 {
-                    account: otp.name || 'Conta Google Auth',
-                    issuer: otp.issuer || 'Google Authenticator',
+                    account: otp.name ?? 'Conta Google Auth',
+                    issuer: otp.issuer ?? 'Google Authenticator',
                     secret: secretBase32,
-                    algorithm: ALGORITHM_MAP[otp.algorithm || 0] || 'SHA1',
+                    algorithm: ALGORITHM_MAP[otp.algorithm ?? 0] ?? 'SHA1',
                     digits: otp.digits === 2 ? 8 : 6,
                     period: 30,
                     type: otp.type === 1 ? 'hotp' : 'totp',
@@ -150,16 +150,16 @@ export const importAuthy = async (filePath: string, store: Store): Promise<Impor
         const newItems: TwoFAItem[] = [];
 
         const addItem = (entry: Record<string, unknown>): void => {
-            if (!entry || typeof entry !== 'object') return;
+            if (entry == null || typeof entry !== 'object') return;
             const item = createTwoFAItem(
                 {
-                    account: (entry.name as string) || (entry.account as string) || (entry.label as string),
-                    issuer: (entry.issuer as string) || (entry.provider as string),
-                    secret: (entry.secret as string) || (entry.decrypted_seed as string) || (entry.seed as string),
-                    algorithm: entry.algorithm as string,
-                    digits: entry.digits as number,
-                    period: entry.period as number,
-                    type: entry.type as string,
+                    account: ((entry.name as string) ?? (entry.account as string) ?? (entry.label as string)) ?? '',
+                    issuer: ((entry.issuer as string) ?? (entry.provider as string)) ?? '',
+                    secret: ((entry.secret as string) ?? (entry.decrypted_seed as string) ?? (entry.seed as string)) ?? '',
+                    algorithm: (entry.algorithm as string) ?? '',
+                    digits: (entry.digits as number) ?? 0,
+                    period: (entry.period as number) ?? 0,
+                    type: (entry.type as string) ?? '',
                 },
                 existingSecrets
             );

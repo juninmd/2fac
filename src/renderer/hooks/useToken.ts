@@ -8,7 +8,7 @@ export const useToken = (item: TwoFAItem) => {
     const [period, setPeriod] = useState<number>(30);
 
     useEffect(() => {
-        setPeriod(item.period || 30);
+        setPeriod(item.period ?? 30);
         generateToken();
         const interval = setInterval(() => {
             generateToken();
@@ -50,9 +50,9 @@ export const useToken = (item: TwoFAItem) => {
             const totp = new OTPAuth.TOTP({
                 issuer: item.issuer,
                 label: item.account,
-                algorithm: (item.algorithm || 'SHA1').toUpperCase(),
-                digits: item.digits || 6,
-                period: item.period || 30,
+                algorithm: (item.algorithm ?? 'SHA1').toUpperCase(),
+                digits: item.digits ?? 6,
+                period: item.period ?? 30,
                 secret: secret,
             });
 
@@ -71,7 +71,7 @@ export const useToken = (item: TwoFAItem) => {
 
             // Calculate seconds remaining
             const now = Math.floor(Date.now() / 1000);
-            const timeStep = item.period || 30;
+             const timeStep = item.period ?? 30;
             const secondsIntoStep = now % timeStep;
             setTimeLeft(timeStep - secondsIntoStep);
         } catch (error) {
