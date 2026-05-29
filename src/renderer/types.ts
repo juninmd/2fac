@@ -15,9 +15,9 @@ export interface TwoFAItem {
 
 export interface ElectronAPI {
     get2FAItems: () => Promise<TwoFAItem[]>;
-    add2FAItem: (item: any) => Promise<any>;
+    add2FAItem: (item: Omit<TwoFAItem, 'id'>) => Promise<TwoFAItem>;
     remove2FAItem: (id: string) => Promise<boolean>;
-    update2FAItem: (id: string, item: any) => Promise<any>;
+    update2FAItem: (id: string, item: Partial<TwoFAItem>) => Promise<TwoFAItem | null>;
     export2FA: () => Promise<{ success: boolean; path?: string }>;
     export2FAEncrypted: (password: string) => Promise<{ success: boolean; path?: string; error?: string }>;
     import2FA: () => Promise<{ success: boolean; count?: number }>;

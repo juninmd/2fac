@@ -50,7 +50,7 @@ const Settings: React.FC<SettingsProps> = ({
         setSettings(loaded);
     };
 
-    const handleSettingChange = async (key: keyof AppSettings, value: any) => {
+    const handleSettingChange = async <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
         const newSettings = { ...settings, [key]: value };
         setSettings(newSettings);
         await window.electron.setSettings(newSettings);
@@ -139,11 +139,11 @@ const Settings: React.FC<SettingsProps> = ({
                         <h3>Aparência</h3>
                         <div className="setting-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '10px' }}>
                             <label className="setting-label">Tema:</label>
-                            <select
-                                className="settings-input"
-                                value={settings.theme || 'dark'}
-                                onChange={(e) => handleSettingChange('theme', e.target.value)}
-                            >
+                                    <select
+                                        className="settings-input"
+                                        value={settings.theme || 'dark'}
+                                        onChange={(e) => handleSettingChange('theme', e.target.value as AppSettings['theme'])}
+                                    >
                                 <option value="dark">Escuro</option>
                                 <option value="light">Claro</option>
                             </select>

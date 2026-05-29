@@ -94,11 +94,11 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd, initialUri }) => {
             issuer: formData.issuer.trim(),
             secret: formData.secret.trim().replace(/\s/g, ''),
             description: formData.description.trim(),
-            algorithm: formData.algorithm as any,
+            algorithm: formData.algorithm,
             digits: parseInt(formData.digits),
             period: parseInt(formData.period),
-            encoding: formData.encoding as any,
-            type: formData.type as any,
+            encoding: formData.encoding,
+            type: formData.type,
             color: formData.color,
             category: formData.category.trim(),
         });
@@ -178,17 +178,17 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd, initialUri }) => {
                     }
 
                     if (parsed && secret) {
-                         setFormData(prev => ({
-                             ...prev,
-                             account: parsed.label || prev.account,
-                             issuer: parsed.issuer || prev.issuer,
-                             secret: secret,
-                             algorithm: (parsed.algorithm || 'SHA1') as any,
-                             digits: (parsed.digits || 6).toString(),
-                             period: (parsed instanceof OTPAuth.TOTP ? parsed.period : 30).toString(),
-                             encoding: 'base32',
-                             type: 'totp'
-                         }));
+                    setFormData(prev => ({
+                        ...prev,
+                        account: parsed.label || prev.account,
+                        issuer: parsed.issuer || prev.issuer,
+                        secret: secret,
+                        algorithm: (parsed.algorithm || 'SHA1'),
+                        digits: (parsed.digits || 6).toString(),
+                        period: (parsed instanceof OTPAuth.TOTP ? parsed.period : 30).toString(),
+                        encoding: 'base32',
+                        type: 'totp'
+                    }));
                          setErrors({});
                     } else {
                         alert('QR Code não contém dados válidos de 2FA.');

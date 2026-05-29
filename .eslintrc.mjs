@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   extends: ['eslint:recommended'],
   parser: '@typescript-eslint/parser',
   plugins: ['@typescript-eslint'],
