@@ -27,6 +27,8 @@ import {
 } from './importers';
 import { TwoFAItem, AppSettings } from './types';
 
+const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
+
 const isDev = process.env.NODE_ENV === 'development';
 app.disableHardwareAcceleration();
 
@@ -313,7 +315,7 @@ ipcMain.handle('scan-screen-qr', async () => {
             mainWindow.minimize();
         }
 
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await sleep(500);
 
         const sources = await desktopCapturer.getSources({
             types: ['screen'],

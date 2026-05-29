@@ -4,20 +4,20 @@ import ItemList from './ItemList';
 import { TwoFAItem } from '../types';
 
 // Mock dependencies
-jest.mock('./Item', () => {
-  import React from 'react';
-  return {
-    __esModule: true,
-    default: (props: any) => React.createElement('div', {
+jest.mock('./Item', () => ({
+  __esModule: true,
+  default: (props: any) => {
+    const { createElement } = require('react');
+    return createElement('div', {
         'data-testid': `item-${props.item.id}`,
-    }, props.item.account)
-  };
-});
+    }, props.item.account);
+  }
+}));
 
 jest.mock('@dnd-kit/sortable', () => {
-    import React from 'react';
+    const { createElement } = require('react');
     return {
-        SortableContext: ({ children }: any) => React.createElement('div', { 'data-testid': 'sortable-context' }, children),
+        SortableContext: ({ children }: any) => createElement('div', { 'data-testid': 'sortable-context' }, children),
         rectSortingStrategy: {},
         verticalListSortingStrategy: {},
     };

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { reorder } from '../utils/arrayUtils';
-import { TwoFAItem } from '../types';
+import { TwoFAItem, AppSettings } from '../types';
 import ItemList from './ItemList';
 import AddItemForm from './AddItemForm';
 import LockScreen from './LockScreen';
@@ -20,7 +20,7 @@ const App: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [sidebarMode, setSidebarMode] = useState<'none' | 'add'>('none');
     const [showSettings, setShowSettings] = useState(false);
-    const [settings, setSettings] = useState<any>(null);
+    const [settings, setSettings] = useState<AppSettings | null>(null);
     const [isWindowFocused, setIsWindowFocused] = useState(true);
     const [pendingUri, setPendingUri] = useState<string | null>(null);
 
@@ -260,7 +260,7 @@ const App: React.FC = () => {
         }
     };
 
-    const handleDragEnd = (event: DragEndEvent) => {
+    const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event;
         if (!over || active.id === over.id) return;
 
