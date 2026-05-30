@@ -53,7 +53,7 @@ export const generateItemId = (): string => {
 };
 
 export const getAppSettings = (store: Store): AppSettings => {
-    return (store.get('appSettings', DEFAULT_SETTINGS) as AppSettings) ?? DEFAULT_SETTINGS;
+    return { ...DEFAULT_SETTINGS, ...(store.get('appSettings', DEFAULT_SETTINGS) as AppSettings) };
 };
 
 export const setAppSettings = (store: Store, settings: AppSettings): void => {
