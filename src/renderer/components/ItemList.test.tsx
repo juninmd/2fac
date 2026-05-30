@@ -1,25 +1,25 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import ItemList from './ItemList';
-import { TwoFAItem } from '../types';
+import type { TwoFAItem } from '../types';
 
 // Mock dependencies
-  jest.mock('./Item', () => ({
-    __esModule: true,
-    default: (props: any) => {
-      // @ts-ignore
-      const { createElement } = require('react');
-      return createElement('div', {
-        'data-testid': `item-${props.item.id}`,
-      }, props.item.account);
-    }
-  }));
+  jest.mock('./Item', () => {
+      const { createElement } = jest.requireActual('react');
+      return {
+        __esModule: true,
+        default: (props: { item: TwoFAItem }) => {
+          return createElement('div', {
+            'data-testid': `item-${props.item.id}`,
+          }, props.item.account);
+        }
+      };
+  });
 
   jest.mock('@dnd-kit/sortable', () => {
-      // @ts-ignore
-      const { createElement } = require('react');
+      const { createElement } = jest.requireActual('react');
       return {
-          SortableContext: ({ children }: any) => createElement('div', { 'data-testid': 'sortable-context' }, children),
+          SortableContext: ({ children }: { children: React.ReactNode }) => createElement('div', { 'data-testid': 'sortable-context' }, children),
           rectSortingStrategy: {},
           verticalListSortingStrategy: {},
       };
