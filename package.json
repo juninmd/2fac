@@ -10,10 +10,10 @@
   "scripts": {
     "dev": "concurrently \"npm run dev:main\" \"npm run dev:renderer\"",
     "dev:main": "tsc --watch --project tsconfig.json",
-    "dev:renderer": "webpack serve --config webpack.config.js --mode development",
+    "dev:renderer": "webpack serve --config webpack.config.ts --mode development",
     "build": "npm run build:main && npm run build:renderer",
     "build:main": "tsc --project tsconfig.json",
-    "build:renderer": "webpack --config webpack.config.js --mode production",
+    "build:renderer": "webpack --config webpack.config.ts --mode production",
     "start": "electron .",
     "test": "jest",
     "electron:dev": "concurrently \"npm run build:main\" \"npm run dev:renderer\" \"wait-on http://localhost:3000 && electron . --serve\"",

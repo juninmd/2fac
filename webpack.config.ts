@@ -2,10 +2,15 @@ import webpack from 'webpack';
 import path from 'path';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import { createRequire } from 'module';
+import { fileURLToPath } from 'url';
+import type { Configuration } from 'webpack';
+import 'webpack-dev-server';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const require = createRequire(import.meta.url);
 
-export default {
+const config: Configuration = {
     entry: './src/renderer/index.tsx',
     output: {
         path: path.resolve(__dirname, 'dist/renderer'),
@@ -53,3 +58,5 @@ export default {
     ],
     target: 'web',
 };
+
+export default config;
