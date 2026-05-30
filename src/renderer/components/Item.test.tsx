@@ -6,7 +6,7 @@ import { TwoFAItem } from '../types';
 // Mock useToken hook
 const mockUseToken = jest.fn();
 jest.mock('../hooks/useToken', () => ({
-  useToken: (item: any) => mockUseToken(item),
+  useToken: (item: TwoFAItem) => mockUseToken(item),
 }));
 
 // Mock dnd-kit

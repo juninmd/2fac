@@ -9,63 +9,95 @@ jest.mock('../utils/arrayUtils', () => ({
 }));
 
 // Mock child components
-jest.mock('./ItemList', () => (props: any) => (
-    <div data-testid="item-list">
-        <button onClick={() => props.onRemove('1')}>Remove 1</button>
-        <button onClick={() => props.onUpdate('1', { account: 'Updated' })}>Update 1</button>
-        <button onClick={() => props.onMove('1', 'up')}>Move Up 1</button>
-        <button onClick={() => props.onMove('1', 'down')}>Move Down 1</button>
+  jest.mock('./ItemList', () => (props: { 
+      items: TwoFAItem[], 
+      viewMode: string, 
+      onRemove: (id: string) => void, 
+      onUpdate: (id: string, updates: Partial<TwoFAItem>) => void, 
+      onMove: (id: string, direction: 'up' | 'down') => void, 
+      isDragEnabled: boolean 
+  }) => (
+      <div data-testid="item-list">
+          <button onClick={() => props.onRemove('1')}>Remove 1</button>
+          <button onClick={() => props.onUpdate('1', { account: 'Updated' })}>Update 1</button>
+          <button onClick={() => props.onMove('1', 'up')}>Move Up 1</button>
+          <button onClick={() => props.onMove('1', 'down')}>Move Down 1</button>
+      </div>
+  ));
+  jest.mock('./AddItemForm', () => ({ onAdd }: { onAdd: (item: Omit<TwoFAItem, 'id'>) => void }) => (
+    <div data-testid="add-item-form">
+      <button onClick={() => onAdd({ account: 'New', issuer: 'Issuer', secret: 'S' })}>Add</button>
     </div>
-));
-jest.mock('./AddItemForm', () => ({ onAdd }: any) => (
-  <div data-testid="add-item-form">
-    <button onClick={() => onAdd({ account: 'New', issuer: 'Issuer', secret: 'S' })}>Add</button>
-  </div>
-));
-jest.mock('./LockScreen', () => ({ onUnlock }: any) => (
-  <div data-testid="lock-screen">
-    <button onClick={onUnlock}>Unlock</button>
-  </div>
-));
-jest.mock('./Settings', () => ({ onClose, onExport, onExportEncrypted, onImport, onImportEncrypted, onImportAuthy, onImportGoogleAuth }: any) => (
-  <div data-testid="settings">
-    <button onClick={onClose}>Close Settings</button>
-    <button onClick={onExport}>📥 Exportar JSON</button>
-    <button onClick={onExportEncrypted}>🔒 Exportar Backup</button>
-    <button onClick={onImport}>📤 Importar JSON</button>
-    <button onClick={onImportEncrypted}>🔓 Restaurar Backup</button>
-    <button onClick={onImportAuthy}>📱 Importar do Authy / URIs</button>
-    <button onClick={onImportGoogleAuth}>📱 Importar do Google Auth</button>
-  </div>
-));
-jest.mock('./SidebarList', () => (props: any) => (
+  ));
+  jest.mock('./LockScreen', () => ({ onUnlock }: { onUnlock: () => void }) => (
+    <div data-testid="lock-screen">
+      <button onClick={onUnlock}>Unlock</button>
+    </div>
+  ));
+  jest.mock('./Settings', () => ({ 
+      onClose, 
+      onExport, 
+      onExportEncrypted, 
+      onImport, 
+      onImportEncrypted, 
+      onImportAuthy, 
+      onImportGoogleAuth 
+  }: { 
+      onClose: () => void, 
+      onExport: () => void, 
+      onExportEncrypted: () => void, 
+      onImport: () => void, 
+      onImportEncrypted: () => void, 
+      onImportAuthy: () => void, 
+      onImportGoogleAuth: () => void 
+  }) => (
+    <div data-testid="settings">
+      <button onClick={onClose}>Close Settings</button>
+      <button onClick={onExport}>📥 Exportar JSON</button>
+      <button onClick={onExportEncrypted}>🔒 Exportar Backup</button>
+      <button onClick={onImport}>📤 Importar JSON</button>
+      <button onClick={onImportEncrypted}>🔓 Restaurar Backup</button>
+      <button onClick={onImportAuthy}>📱 Importar do Authy / URIs</button>
+      <button onClick={onImportGoogleAuth}>📱 Importar do Google Auth</button>
+    </div>
+  ));
+  jest.mock('./SidebarList', () => (props: { 
+      items: TwoFAItem[], 
+      onSelect: (id: string) => void, 
+      onMove: (id: string, direction: 'up' | 'down') => void, 
+      selectedItemId: string | null 
+  }) => (
     <div data-testid="sidebar-list">
-        <button onClick={() => props.onSelect('1')}>Select 1</button>
-        <button onClick={() => props.onMove('1', 'up')}>Move Up 1</button>
-        <span data-testid="selected-id">{props.selectedItemId}</span>
+      <button onClick={() => props.onSelect('1')}>Select 1</button>
+      <button onClick={() => props.onMove('1', 'up')}>Move Up 1</button>
+      <span data-testid="selected-id">{props.selectedItemId}</span>
     </div>
-));
-jest.mock('./TokenDetail', () => (props: any) => (
+  ));
+  jest.mock('./TokenDetail', () => (props: { 
+      item: TwoFAItem, 
+      onUpdate: (id: string, updates: Partial<TwoFAItem>) => void, 
+      onRemove: (id: string) => void 
+  }) => (
     <div data-testid="token-detail">
-        <button onClick={() => props.onRemove('1')}>Remove Detail 1</button>
-        <button onClick={() => props.onUpdate('1', { account: 'Updated' })}>Update Detail 1</button>
+      <button onClick={() => props.onRemove('1')}>Remove Detail 1</button>
+      <button onClick={() => props.onUpdate('1', { account: 'Updated' })}>Update Detail 1</button>
     </div>
-));
+  ));
 
 // Mock dnd-kit
-jest.mock('@dnd-kit/core', () => ({
-  DndContext: ({ children, onDragEnd }: any) => (
-      <div>
-          {children}
-          <button data-testid="trigger-drag-end" onClick={() => onDragEnd({ active: { id: '1' }, over: { id: '2' } })}>DragEnd</button>
-          <button data-testid="trigger-drag-end-same" onClick={() => onDragEnd({ active: { id: '1' }, over: { id: '1' } })}>DragEndSame</button>
-      </div>
-  ),
-  closestCenter: jest.fn(),
-  PointerSensor: jest.fn(),
-  useSensor: jest.fn(),
-  useSensors: jest.fn(),
-}));
+  jest.mock('@dnd-kit/core', () => ({
+    DndContext: ({ children, onDragEnd }: { children: React.ReactNode; onDragEnd: (event: { active: { id: string }; over: { id: string } }) => void }) => (
+        <div>
+            {children}
+            <button data-testid="trigger-drag-end" onClick={() => onDragEnd({ active: { id: '1' }, over: { id: '2' } })}>DragEnd</button>
+            <button data-testid="trigger-drag-end-same" onClick={() => onDragEnd({ active: { id: '1' }, over: { id: '1' } })}>DragEndSame</button>
+        </div>
+    ),
+    closestCenter: jest.fn(),
+    PointerSensor: jest.fn(),
+    useSensor: jest.fn(),
+    useSensors: jest.fn(),
+  }));
 
 // Mock window.electron
 const mockGetSettings = jest.fn();

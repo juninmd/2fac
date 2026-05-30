@@ -6,8 +6,17 @@ import { TwoFAItem } from '../types';
 // Mock dnd-kit
 const mockUseSortable = jest.fn();
 jest.mock('@dnd-kit/sortable', () => ({
-  useSortable: (args: any) => mockUseSortable(args),
-  SortableContext: ({ children }: any) => <div>{children}</div>,
+  useSortable: (args: { 
+      id: string | number; 
+      items: any[]; 
+      collisionDetection: any; 
+      collisionDetectionArgs?: any; 
+      data: any; 
+      measurementStrategy?: any; 
+      sortingStrategy?: any; 
+      freezeDrag?: boolean; 
+  }) => mockUseSortable(args),
+  SortableContext: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   verticalListSortingStrategy: {},
 }));
 
