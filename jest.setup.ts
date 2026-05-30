@@ -21,7 +21,7 @@ Object.defineProperty(window, 'electron', {
     hasMasterPassword: jest.fn<Promise<boolean>, []>(),
     getSettings: jest.fn<Promise<AppSettings>, []>(),
     setSettings: jest.fn<Promise<boolean>, [AppSettings]>(),
-    onProtocolUrl: jest.fn<(callback: (url: string) => void) => () => void, [(url: string) => void]>(),
+    onProtocolUrl: jest.fn<() => void, [(url: string) => void]>(),
   },
   writable: true,
 });
