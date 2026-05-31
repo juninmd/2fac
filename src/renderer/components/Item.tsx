@@ -21,7 +21,7 @@ const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, onMove, view
     const { token, timeLeft, period } = useToken(item);
     const [copied, setCopied] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [editForm, setEditForm] = useState({ account: item.account, issuer: item.issuer, color: item.color || '#e23e3e' });
+    const [editForm, setEditForm] = useState({ account: item.account, issuer: item.issuer, color: item.color ?? '#e23e3e' });
 
     const copyToClipboard = () => {
         const rawToken = token.replace(/\s/g, '');

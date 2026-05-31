@@ -51,9 +51,9 @@ const Settings: React.FC<SettingsProps> = ({
     };
 
     const handleSettingChange = async <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
-        const newSettings = { ...settings, [key]: value };
-        setSettings(newSettings);
-        await window.electron.setSettings(newSettings);
+        const updated = { ...settings, [key]: value };
+        setSettings(updated);
+        await window.electron.setSettings(updated);
     };
 
     const handleChangePassword = async (e: React.FormEvent) => {

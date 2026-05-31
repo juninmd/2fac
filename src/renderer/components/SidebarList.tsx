@@ -32,7 +32,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ item, isSelected, onSelect, i
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
-        '--issuer-color': item.color || '#e23e3e',
+        '--issuer-color': item.color ?? '#e23e3e',
         opacity: isDragging ? 0.5 : 1,
         zIndex: isDragging ? 999 : 'auto',
     } as React.CSSProperties;

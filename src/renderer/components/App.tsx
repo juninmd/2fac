@@ -283,8 +283,6 @@ const App: React.FC = () => {
             const result = await window.electron.export2FA();
             if (result.success) {
                 alert(`Backup exportado com sucesso: ${result.path}`);
-            } else {
-                // alert('Exportação cancelada');
             }
         } catch (error) {
             console.error('Failed to export:', error);
@@ -315,8 +313,6 @@ const App: React.FC = () => {
             if (result.success) {
                 await loadItems();
                 alert(`${result.count} itens importados com sucesso!`);
-            } else {
-                // alert('Importação cancelada');
             }
         } catch (error) {
             console.error('Failed to import:', error);

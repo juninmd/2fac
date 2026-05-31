@@ -1,4 +1,5 @@
 import * as crypto from 'crypto';
+import { promisify } from 'util';
 import { EncryptedBackup } from './types';
 
 const ENCRYPTION_ALGORITHM = 'aes-256-gcm';
@@ -6,13 +7,15 @@ const KEY_LENGTH = 32;
 const IV_LENGTH = 16;
 const PBKDF2_ITERATIONS = 100000;
 
+const pbkdf2 = promisify<Buffer | string, Buffer, number, number, string, Buffer>(crypto.pbkdf2);
+
 export const hashPassword = (password: string): string => {
     return crypto.createHash('sha256').update(password).digest('hex');
 };
 
-export const encryptData = (data: string, password: string): EncryptedBackup => {
+export const encryptData = async (data: string, password: string): Promise<EncryptedBackup> => {
     const salt = crypto.randomBytes(32);
-    const key = crypto.pbkdf2Sync(password, salt, PBKDF2_ITERATIONS, KEY_LENGTH, 'sha256');
+    const key = await pbkdf2(password, salt, PBKDF2_ITERATIONS, KEY_LENGTH, 'sha256');
     const iv = crypto.randomBytes(IV_LENGTH);
 
     const cipher = crypto.createCipheriv(ENCRYPTION_ALGORITHM, key, iv);
@@ -29,12 +32,12 @@ export const encryptData = (data: string, password: string): EncryptedBackup => 
     };
 };
 
-export const decryptData = (backup: EncryptedBackup, password: string): string => {
+export const decryptData = async (backup: EncryptedBackup, password: string): Promise<string> => {
     const salt = Buffer.from(backup.salt, 'hex');
     const iv = Buffer.from(backup.iv, 'hex');
     const authTag = Buffer.from(backup.authTag, 'hex');
 
-    const key = crypto.pbkdf2Sync(password, salt, PBKDF2_ITERATIONS, KEY_LENGTH, 'sha256');
+    const key = await pbkdf2(password, salt, PBKDF2_ITERATIONS, KEY_LENGTH, 'sha256');
     const decipher = crypto.createDecipheriv(ENCRYPTION_ALGORITHM, key, iv);
     decipher.setAuthTag(authTag);
 

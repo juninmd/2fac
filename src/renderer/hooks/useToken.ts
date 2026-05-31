@@ -8,60 +8,56 @@ export const useToken = (item: TwoFAItem) => {
     const [period, setPeriod] = useState<number>(30);
 
     useEffect(() => {
-        setPeriod(item.period || 30);
+        setPeriod(item.period ?? 30);
         generateToken();
-        const interval = setInterval(() => {
-            generateToken();
-        }, 1000);
+        const interval = setInterval(generateToken, 1000);
 
         return () => clearInterval(interval);
     }, [item]);
 
     const generateToken = () => {
         try {
-            let secret;
-            switch (item.encoding) {
+            const { encoding, secret, issuer, account, algorithm, digits, period: itemPeriod } = item;
+            let secretObj;
+
+            switch (encoding) {
                 case 'base64':
-                    // OTPAuth doesn't have fromBase64, convert manually
                     try {
-                        const binary = atob(item.secret);
+                        const binary = atob(secret!);
                         const bytes = new Uint8Array(binary.length);
                         for (let i = 0; i < binary.length; i++) {
                             bytes[i] = binary.charCodeAt(i);
                         }
-                        secret = new OTPAuth.Secret({ buffer: bytes.buffer });
+                        secretObj = new OTPAuth.Secret({ buffer: bytes.buffer });
                     } catch (e) {
                         console.error('Invalid Base64 secret', e);
-                        secret = new OTPAuth.Secret();
+                        secretObj = new OTPAuth.Secret();
                     }
                     break;
                 case 'hex':
-                    secret = OTPAuth.Secret.fromHex(item.secret);
+                    secretObj = OTPAuth.Secret.fromHex(secret!);
                     break;
                 case 'ascii':
-                    secret = OTPAuth.Secret.fromLatin1(item.secret);
+                    secretObj = OTPAuth.Secret.fromLatin1(secret!);
                     break;
                 case 'base32':
                 default:
-                    secret = OTPAuth.Secret.fromBase32(item.secret);
+                    secretObj = OTPAuth.Secret.fromBase32(secret!);
                     break;
             }
 
             const totp = new OTPAuth.TOTP({
-                issuer: item.issuer,
-                label: item.account,
-                algorithm: (item.algorithm || 'SHA1').toUpperCase(),
-                digits: item.digits || 6,
-                period: item.period || 30,
-                secret: secret,
+                issuer,
+                label: account,
+                algorithm: (algorithm || 'SHA1').toUpperCase(),
+                digits: digits || 6,
+                period: itemPeriod || 30,
+                secret: secretObj,
             });
 
             const newToken = totp.generate();
 
-            // Format token with space
-            if (newToken.length === 6) {
-                setToken(newToken.slice(0, 3) + ' ' + newToken.slice(3));
-            } else if (newToken.length === 7) {
+            if (newToken.length === 6 || newToken.length === 7) {
                 setToken(newToken.slice(0, 3) + ' ' + newToken.slice(3));
             } else if (newToken.length === 8) {
                 setToken(newToken.slice(0, 4) + ' ' + newToken.slice(4));
@@ -69,9 +65,8 @@ export const useToken = (item: TwoFAItem) => {
                 setToken(newToken);
             }
 
-            // Calculate seconds remaining
             const now = Math.floor(Date.now() / 1000);
-            const timeStep = item.period || 30;
+            const timeStep = itemPeriod || 30;
             const secondsIntoStep = now % timeStep;
             setTimeLeft(timeStep - secondsIntoStep);
         } catch (error) {
