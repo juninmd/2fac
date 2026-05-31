@@ -1,7 +1,7 @@
-import * as fs from 'fs';
 import * as crypto from 'crypto';
 import * as OTPAuth from 'otpauth';
 import * as protobuf from 'protobufjs';
+import { readFile } from 'fs/promises';
 import Store from 'electron-store';
 import { TwoFAItem, ImportResult, AlgorithmMap } from './types';
 import { getExistingSecrets, appendItems, generateItemId } from './store';
@@ -41,6 +41,23 @@ enum OtpType {
 }
 `;
 
+interface OtpParametersProto {
+    secret: Uint8Array;
+    name?: string;
+    issuer?: string;
+    algorithm?: number;
+    digits?: number;
+    type?: number;
+}
+
+interface MigrationPayloadProto {
+    otpParameters?: OtpParametersProto[];
+    version?: number;
+    batchSize?: number;
+    batchIndex?: number;
+    batchId?: number;
+}
+
 const root = protobuf.parse(GOOGLE_AUTH_PROTO).root;
 const MigrationPayload = root.lookupType('MigrationPayload');
 
@@ -68,7 +85,7 @@ const createTwoFAItem = (
     data: Partial<TwoFAItem>,
     existingSecrets: Set<string>
 ): TwoFAItem | null => {
-    const secret = (data.secret || '').replace(/\s+/g, '').toUpperCase();
+    const secret = data.secret?.replace(/\s+/g, '').toUpperCase();
     if (!secret || existingSecrets.has(secret)) return null;
 
     const item: TwoFAItem = {
@@ -86,9 +103,12 @@ const createTwoFAItem = (
     return item;
 };
 
+const getErrorMessage = (error: unknown): string =>
+    error instanceof Error ? error.message : String(error);
+
 export const importGoogleAuth = async (filePath: string, store: Store): Promise<ImportResult> => {
     try {
-        const fileContent = fs.readFileSync(filePath, 'utf-8').trim();
+        const fileContent = (await readFile(filePath, 'utf-8')).trim();
 
         if (!fileContent.startsWith('otpauth-migration://offline?data=')) {
             return { success: false, error: 'O arquivo não contém um link válido do otpauth-migration' };
@@ -96,16 +116,9 @@ export const importGoogleAuth = async (filePath: string, store: Store): Promise<
 
         const dataPart = fileContent.replace('otpauth-migration://offline?data=', '');
         const decodedData = Buffer.from(decodeURIComponent(dataPart), 'base64');
-        const message = MigrationPayload.decode(decodedData) as { otpParameters?: Array<{
-            secret: Uint8Array;
-            name?: string;
-            issuer?: string;
-            algorithm?: number;
-            digits?: number;
-            type?: number;
-        }> };
+        const message = MigrationPayload.decode(decodedData) as MigrationPayloadProto;
 
-        if (!message.otpParameters || message.otpParameters.length === 0) {
+        if (!message.otpParameters?.length) {
             return { success: false, error: 'Nenhum token encontrado' };
         }
 
@@ -119,7 +132,7 @@ export const importGoogleAuth = async (filePath: string, store: Store): Promise<
                     account: otp.name || 'Conta Google Auth',
                     issuer: otp.issuer || 'Google Authenticator',
                     secret: secretBase32,
-                    algorithm: ALGORITHM_MAP[otp.algorithm || 0] || 'SHA1',
+                    algorithm: ALGORITHM_MAP[otp.algorithm ?? 0] || 'SHA1',
                     digits: otp.digits === 2 ? 8 : 6,
                     period: 30,
                     type: otp.type === 1 ? 'hotp' : 'totp',
@@ -145,7 +158,7 @@ export const importGoogleAuth = async (filePath: string, store: Store): Promise<
 
 export const importAuthy = async (filePath: string, store: Store): Promise<ImportResult> => {
     try {
-        const fileContent = fs.readFileSync(filePath, 'utf-8');
+        const fileContent = await readFile(filePath, 'utf-8');
         const existingSecrets = getExistingSecrets(store);
         const newItems: TwoFAItem[] = [];
 
@@ -153,13 +166,13 @@ export const importAuthy = async (filePath: string, store: Store): Promise<Impor
             if (!entry || typeof entry !== 'object') return;
             const item = createTwoFAItem(
                 {
-                    account: (entry.name as string) || (entry.account as string) || (entry.label as string),
-                    issuer: (entry.issuer as string) || (entry.provider as string),
-                    secret: (entry.secret as string) || (entry.decrypted_seed as string) || (entry.seed as string),
-                    algorithm: entry.algorithm as string,
-                    digits: entry.digits as number,
-                    period: entry.period as number,
-                    type: entry.type as string,
+                    account: (entry.name ?? entry.account ?? entry.label) as string | undefined,
+                    issuer: (entry.issuer ?? entry.provider) as string | undefined,
+                    secret: (entry.secret ?? entry.decrypted_seed ?? entry.seed) as string | undefined,
+                    algorithm: entry.algorithm as string | undefined,
+                    digits: entry.digits as number | undefined,
+                    period: entry.period as number | undefined,
+                    type: entry.type as string | undefined,
                 },
                 existingSecrets
             );
@@ -169,7 +182,6 @@ export const importAuthy = async (filePath: string, store: Store): Promise<Impor
             }
         };
 
-        // Try JSON parsing first
         try {
             const data = JSON.parse(fileContent);
             let entries: Record<string, unknown>[] = [];
@@ -191,7 +203,6 @@ export const importAuthy = async (filePath: string, store: Store): Promise<Impor
             // Not valid JSON, proceed to URI parsing
         }
 
-        // Try OTPAuth URI parsing
         if (newItems.length === 0) {
             const lines = fileContent.split(/\r?\n/);
             for (const line of lines) {
@@ -203,10 +214,10 @@ export const importAuthy = async (filePath: string, store: Store): Promise<Impor
                             addItem({
                                 account: parsed.label as unknown as string,
                                 issuer: parsed.issuer,
-                                secret: parsed.secret.base32,
+                                secret: parsed.secret?.base32,
                                 algorithm: parsed.algorithm,
                                 digits: parsed.digits,
-                                period: parsed instanceof OTPAuth.TOTP ? (parsed as OTPAuth.TOTP).period : 30,
+                                period: parsed instanceof OTPAuth.TOTP ? parsed.period : 30,
                                 type: 'totp',
                             });
                         }
@@ -226,7 +237,7 @@ export const importAuthy = async (filePath: string, store: Store): Promise<Impor
         return { success: newItems.length > 0, count: newItems.length };
     } catch (error) {
         console.error('Erro na importação Authy:', error);
-        return { success: false, error: (error as Error).message };
+        return { success: false, error: getErrorMessage(error) };
     }
 };
 
@@ -236,7 +247,7 @@ export const importEncrypted = async (
     store: Store
 ): Promise<ImportResult> => {
     try {
-        const fileContent = fs.readFileSync(filePath, 'utf-8');
+        const fileContent = await readFile(filePath, 'utf-8');
         let backupData: unknown;
 
         try {
@@ -249,7 +260,7 @@ export const importEncrypted = async (
             return { success: false, error: 'Invalid backup file structure' };
         }
 
-        const decrypted = decryptData(backupData, password);
+        const decrypted = await decryptData(backupData, password);
         const importedItems: TwoFAItem[] = JSON.parse(decrypted);
 
         const itemsWithNewIds = importedItems.map(item => ({
@@ -261,10 +272,11 @@ export const importEncrypted = async (
         return { success: true, count: itemsWithNewIds.length };
     } catch (error) {
         console.error('Import decryption error:', error);
-        if ((error as Error).message.includes('auth tag')) {
+        const message = getErrorMessage(error);
+        if (message.includes('auth tag')) {
             return { success: false, error: 'Senha incorreta ou arquivo corrompido' };
         }
-        return { success: false, error: (error as Error).message };
+        return { success: false, error: message };
     }
 };
 
@@ -273,7 +285,7 @@ export const importPlain = async (
     store: Store
 ): Promise<ImportResult> => {
     try {
-        const fileContent = fs.readFileSync(filePath, 'utf-8');
+        const fileContent = await readFile(filePath, 'utf-8');
         const importedItems: TwoFAItem[] = JSON.parse(fileContent);
 
         const itemsWithNewIds = importedItems.map(item => ({
@@ -284,6 +296,6 @@ export const importPlain = async (
         appendItems(store, itemsWithNewIds);
         return { success: true, count: itemsWithNewIds.length };
     } catch (error) {
-        return { success: false, error: (error as Error).message };
+        return { success: false, error: getErrorMessage(error) };
     }
 };

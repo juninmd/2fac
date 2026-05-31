@@ -37,13 +37,10 @@ const LockScreen: React.FC<LockScreenProps> = ({ onUnlock }) => {
             }
             await window.electron.setMasterPassword(password);
             onUnlock();
+        } else if (await window.electron.checkMasterPassword(password)) {
+            onUnlock();
         } else {
-            const isValid = await window.electron.checkMasterPassword(password);
-            if (isValid) {
-                onUnlock();
-            } else {
-                setError('Senha incorreta');
-            }
+            setError('Senha incorreta');
         }
     };
 

@@ -1,6 +1,6 @@
 import { app, BrowserWindow, Menu, ipcMain, dialog, desktopCapturer, Tray, nativeImage } from 'electron';
 import * as path from 'path';
-import * as fs from 'fs';
+import { writeFile, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
@@ -29,6 +29,17 @@ import { TwoFAItem, AppSettings } from './types';
 
 const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
 
+const writeFileAsync = (filePath: string, data: string): Promise<void> =>
+    new Promise((resolve, reject) => {
+        writeFile(filePath, data, 'utf-8', (err) => {
+            if (err) reject(err);
+            else resolve();
+        });
+    });
+
+const getErrorMessage = (error: unknown): string =>
+    error instanceof Error ? error.message : String(error);
+
 const isDev = process.env.NODE_ENV === 'development';
 app.disableHardwareAcceleration();
 
@@ -44,7 +55,7 @@ const createTray = (): void => {
 
     const iconPath = path.join(__dirname, '../../public/icon.png');
     let icon = nativeImage.createEmpty();
-    if (fs.existsSync(iconPath)) {
+    if (existsSync(iconPath)) {
         icon = nativeImage.createFromPath(iconPath);
     }
 
@@ -228,12 +239,12 @@ ipcMain.handle('set-2fa-items', (_event, items: TwoFAItem[]) => {
 ipcMain.handle('export-2fa', async () => {
     const items = getTwoFAItems(store);
     const result = await dialog.showSaveDialog(mainWindow!, {
-        defaultPath: `2fa-backup-${new Date().getTime()}.json`,
+        defaultPath: `2fa-backup-${Date.now()}.json`,
         filters: [{ name: 'JSON Files', extensions: ['json'] }],
     });
 
     if (!result.canceled && result.filePath) {
-        fs.writeFileSync(result.filePath, JSON.stringify(items, null, 2));
+        await writeFileAsync(result.filePath, JSON.stringify(items, null, 2));
         return { success: true, path: result.filePath };
     }
     return { success: false };
@@ -242,18 +253,18 @@ ipcMain.handle('export-2fa', async () => {
 ipcMain.handle('export-2fa-encrypted', async (_event, password: string) => {
     const items = getTwoFAItems(store);
     const result = await dialog.showSaveDialog(mainWindow!, {
-        defaultPath: `2fa-backup-encrypted-${new Date().getTime()}.enc`,
+        defaultPath: `2fa-backup-encrypted-${Date.now()}.enc`,
         filters: [{ name: 'Encrypted 2FA Backup', extensions: ['enc'] }],
     });
 
     if (!result.canceled && result.filePath) {
         try {
             const backupFile = await encryptData(JSON.stringify(items), password);
-            fs.writeFileSync(result.filePath, JSON.stringify(backupFile));
+            await writeFileAsync(result.filePath, JSON.stringify(backupFile));
             return { success: true, path: result.filePath };
         } catch (error) {
             console.error('Export encryption error:', error);
-            return { success: false, error: (error as Error).message };
+            return { success: false, error: getErrorMessage(error) };
         }
     }
     return { success: false };
@@ -323,9 +334,9 @@ ipcMain.handle('scan-screen-qr', async () => {
         });
 
         for (const source of sources) {
-            const image = source.thumbnail;
-            const size = image.getSize();
-            const bitmap = image.toBitmap();
+            const { thumbnail } = source;
+            const size = thumbnail.getSize();
+            const bitmap = thumbnail.toBitmap();
             const code = jsQR(new Uint8ClampedArray(bitmap), size.width, size.height);
 
             if (code) {
@@ -339,7 +350,7 @@ ipcMain.handle('scan-screen-qr', async () => {
     } catch (error) {
         console.error('QR Scan error:', error);
         if (mainWindow) mainWindow.restore();
-        return { success: false, error: (error as Error).message };
+        return { success: false, error: getErrorMessage(error) };
     }
 });
 

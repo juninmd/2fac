@@ -105,8 +105,7 @@ const IssuerIcon: React.FC<IssuerIconProps> = ({ issuer }) => {
         );
     }
 
-    // Fallback to first letter
-    const letter = issuer ? issuer.trim().charAt(0).toUpperCase() : '?';
+    const letter = issuer?.trim().charAt(0).toUpperCase() || '?';
     return <span style={{ pointerEvents: 'none' }}>{letter}</span>;
 };
 

@@ -28,44 +28,50 @@ export const BRAND_COLORS: Record<string, string> = {
     'cloudflare': '#f38020',
 };
 
+type BrandMatcher = [string, string[]];
+
+const BRAND_MATCHERS: BrandMatcher[] = [
+    ['google', ['google']],
+    ['microsoft', ['microsoft', 'outlook', 'office', 'live.com', 'hotmail']],
+    ['amazon', ['amazon', 'aws']],
+    ['facebook', ['facebook', 'meta']],
+    ['github', ['github']],
+    ['discord', ['discord']],
+    ['twitter', ['twitter', 'x', 'x.com']],
+    ['apple', ['apple', 'icloud']],
+    ['dropbox', ['dropbox']],
+    ['slack', ['slack']],
+    ['binance', ['binance']],
+    ['protonmail', ['proton', 'protonmail']],
+    ['paypal', ['paypal']],
+    ['stripe', ['stripe']],
+    ['digitalocean', ['digitalocean', 'do_']],
+    ['heroku', ['heroku']],
+    ['linkedin', ['linkedin']],
+    ['instagram', ['instagram']],
+    ['twitch', ['twitch']],
+    ['reddit', ['reddit']],
+    ['teamviewer', ['teamviewer']],
+    ['evernote', ['evernote']],
+    ['coinbase', ['coinbase']],
+    ['blockchain', ['blockchain']],
+    ['gitlab', ['gitlab']],
+    ['bitbucket', ['bitbucket']],
+    ['cloudflare', ['cloudflare']],
+];
+
 export const normalizeIssuer = (str: string): string => str.toLowerCase().replace(/\s/g, '');
 
 export const getBrandKey = (issuer: string): string | null => {
     const key = normalizeIssuer(issuer);
     if (!key) return null;
 
-    // Check for exact matches in keys first (optional, but good for direct mapping)
-    // But since we use 'includes', we need to be careful with order.
+    for (const [brandKey, keywords] of BRAND_MATCHERS) {
+        if (keywords.some(kw => key.includes(kw) || key === kw)) {
+            return brandKey;
+        }
+    }
 
-    if (key.includes('google')) return 'google';
-    if (key.includes('microsoft') || key.includes('outlook') || key.includes('office') || key.includes('live.com') || key.includes('hotmail')) return 'microsoft';
-    if (key.includes('amazon') || key.includes('aws')) return 'amazon';
-    if (key.includes('facebook') || key.includes('meta')) return 'facebook';
-    if (key.includes('github')) return 'github';
-    if (key.includes('discord')) return 'discord';
-    if (key.includes('twitter') || key === 'x' || key.includes('x.com')) return 'twitter';
-    if (key.includes('apple') || key.includes('icloud')) return 'apple';
-    if (key.includes('dropbox')) return 'dropbox';
-    if (key.includes('slack')) return 'slack';
-    if (key.includes('binance')) return 'binance';
-    if (key.includes('proton') || key.includes('protonmail')) return 'protonmail';
-    if (key.includes('paypal')) return 'paypal';
-    if (key.includes('stripe')) return 'stripe';
-    if (key.includes('digitalocean') || key.includes('do_')) return 'digitalocean';
-    if (key.includes('heroku')) return 'heroku';
-    if (key.includes('linkedin')) return 'linkedin';
-    if (key.includes('instagram')) return 'instagram';
-    if (key.includes('twitch')) return 'twitch';
-    if (key.includes('reddit')) return 'reddit';
-    if (key.includes('teamviewer')) return 'teamviewer';
-    if (key.includes('evernote')) return 'evernote';
-    if (key.includes('coinbase')) return 'coinbase';
-    if (key.includes('blockchain')) return 'blockchain';
-    if (key.includes('gitlab')) return 'gitlab';
-    if (key.includes('bitbucket')) return 'bitbucket';
-    if (key.includes('cloudflare')) return 'cloudflare';
-
-    // Fallback: Check if the key exactly matches a known brand key
     if (BRAND_COLORS[key]) return key;
 
     return null;
@@ -73,8 +79,5 @@ export const getBrandKey = (issuer: string): string | null => {
 
 export const getBrandColor = (issuer: string): string | null => {
     const key = getBrandKey(issuer);
-    if (key && BRAND_COLORS[key]) {
-        return BRAND_COLORS[key];
-    }
-    return null;
+    return key ? (BRAND_COLORS[key] ?? null) : null;
 };

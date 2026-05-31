@@ -12,7 +12,7 @@ const DEFAULT_SETTINGS: AppSettings = {
 export const createStore = (): Store => new Store();
 
 export const getTwoFAItems = (store: Store): TwoFAItem[] => {
-    return (store.get('twoFAItems', []) as TwoFAItem[]) ?? [];
+    return (store.get('twoFAItems', []) as TwoFAItem[]);
 };
 
 export const setTwoFAItems = (store: Store, items: TwoFAItem[]): void => {
@@ -49,7 +49,7 @@ export const updateTwoFAItem = (store: Store, id: string, updates: Partial<TwoFA
 };
 
 export const generateItemId = (): string => {
-    return Date.now().toString() + Math.random().toString(36).substring(2, 9);
+    return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
 };
 
 export const getAppSettings = (store: Store): AppSettings => {

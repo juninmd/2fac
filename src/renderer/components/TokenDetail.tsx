@@ -14,11 +14,11 @@ const TokenDetail: React.FC<TokenDetailProps> = ({ item, onUpdate, onRemove }) =
     const { token, timeLeft, period } = useToken(item);
     const [copied, setCopied] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [editForm, setEditForm] = useState({ account: item.account, issuer: item.issuer, color: item.color || '#e23e3e', category: item.category || '' });
+    const [editForm, setEditForm] = useState({ account: item.account, issuer: item.issuer, color: item.color ?? '#e23e3e', category: item.category ?? '' });
 
     // Sync form with item changes
     React.useEffect(() => {
-        setEditForm({ account: item.account, issuer: item.issuer, color: item.color || '#e23e3e', category: item.category || '' });
+        setEditForm({ account: item.account, issuer: item.issuer, color: item.color ?? '#e23e3e', category: item.category ?? '' });
     }, [item]);
 
     const copyToClipboard = () => {
