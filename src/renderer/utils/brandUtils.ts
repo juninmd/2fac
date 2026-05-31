@@ -67,7 +67,7 @@ export const getBrandKey = (issuer: string): string | null => {
     if (!key) return null;
 
     for (const [brandKey, keywords] of BRAND_MATCHERS) {
-        if (keywords.some(kw => key.includes(kw) || key === kw)) {
+        if (keywords.some(kw => kw.length === 1 ? key === kw : key.includes(kw))) {
             return brandKey;
         }
     }
