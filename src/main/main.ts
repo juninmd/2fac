@@ -1,6 +1,7 @@
 import { app, BrowserWindow, Menu, ipcMain, dialog, desktopCapturer, Tray, nativeImage } from 'electron';
 import * as path from 'path';
-import { writeFile, existsSync } from 'fs';
+import { existsSync } from 'fs';
+import { writeFile } from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
@@ -244,7 +245,7 @@ ipcMain.handle('export-2fa', async () => {
     });
 
     if (!result.canceled && result.filePath) {
-        await writeFileAsync(result.filePath, JSON.stringify(items, null, 2));
+        await writeFile(result.filePath, JSON.stringify(items, null, 2), 'utf-8');
         return { success: true, path: result.filePath };
     }
     return { success: false };
@@ -260,7 +261,7 @@ ipcMain.handle('export-2fa-encrypted', async (_event, password: string) => {
     if (!result.canceled && result.filePath) {
         try {
             const backupFile = await encryptData(JSON.stringify(items), password);
-            await writeFileAsync(result.filePath, JSON.stringify(backupFile));
+            await writeFile(result.filePath, JSON.stringify(backupFile), 'utf-8');
             return { success: true, path: result.filePath };
         } catch (error) {
             console.error('Export encryption error:', error);
