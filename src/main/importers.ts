@@ -166,9 +166,9 @@ export const importAuthy = async (filePath: string, store: Store): Promise<Impor
             if (!entry || typeof entry !== 'object') return;
             const item = createTwoFAItem(
                 {
-                    account: (entry.name ?? entry.account ?? entry.label) as string | undefined,
-                    issuer: (entry.issuer ?? entry.provider) as string | undefined,
-                    secret: (entry.secret ?? entry.decrypted_seed ?? entry.seed) as string | undefined,
+                    account: (entry.name || entry.account || entry.label) as string | undefined,
+                    issuer: (entry.issuer || entry.provider) as string | undefined,
+                    secret: (entry.secret || entry.decrypted_seed || entry.seed) as string | undefined,
                     algorithm: entry.algorithm as string | undefined,
                     digits: entry.digits as number | undefined,
                     period: entry.period as number | undefined,
