@@ -114,7 +114,6 @@ title = "2FAC Secret Scanning Configuration"
   description = "Age Secret Key"
   regex = '''AGE-SECRET-KEY-[0-9A-Z]{59}'''
   tags = ["key", "age", "encryption"]
-]
 
 # Custom rules for 2FAC specific patterns
 [[rules]]
