@@ -493,6 +493,7 @@ const Settings: React.FC<SettingsProps> = ({
         if (!settings) return;
         if (!settings) return;
         if (!settings) return;
+        if (!settings) return;
         const newSettings = { ...settings, [key]: value };
         setSettings(newSettings);
         await window.electron.setSettings(newSettings);
