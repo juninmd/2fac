@@ -11,50 +11,46 @@ O objetivo desta proposta é garantir uma base sólida, auditável e extremament
 Para atingir um equilíbrio ideal entre segurança, velocidade de desenvolvimento, controle sobre criptografia e multiplataforma, proponho a seguinte stack:
 
 ### Aplicativo Desktop (Windows e Ubuntu)
-*   **Engine & Interface:** **Electron + React + TypeScript**
-    *   **Por que não Rust/Tauri ou C++/Qt?** Embora Tauri seja mais leve e seguro (pois não empacota o Chromium), Electron (com *Context Isolation* e *Node Integration* estritamente desabilitado no Renderer) é a tecnologia padrão da indústria (usado pelo 1Password, Bitwarden, etc.), permitindo ciclo de iteração mais rápido, ecossistema gigante de bibliotecas criptográficas robustas via Node.js e compatibilidade impecável com Windows e Ubuntu Linux. Rust é excelente, mas introduz um tempo de desenvolvimento significativamente maior.
-    *   **Banco de Dados Local:** `electron-store` (com camada de criptografia transparente construída por cima) ou SQLite + `sqlcipher` (se prevermos um volume muito alto de dados ou estruturação complexa futura).
-
-### Criptografia Core (Node.js)
-*   Aproveitaremos o módulo nativo `crypto` do Node.js no Main Process para todas as operações sensíveis, garantindo que estejam fora do alcance de vulnerabilidades XSS no Renderer Process.
-*   Bibliotecas utilitárias: `crypto-js` para padding, hashing auxiliar se necessário, mas dependência primária no `node:crypto`.
+*   **Engine & Interface:** **Rust + Tauri** (Recomendado para Segurança Extrema) ou **Electron + React + TypeScript** (Foco em Velocidade de Desenvolvimento).
+    *   **Por que Rust/Tauri?** Tauri é mais leve e seguro por não empacotar o Chromium, possuindo uma superfície de ataque menor. O backend em Rust proporciona extrema segurança de memória e velocidade.
+    *   **Por que Electron?** Se o time dominar Node.js, Electron (com *Context Isolation* estrito e *Node Integration* desabilitado) é viável, permitindo iteração mais rápida.
+    *   **Banco de Dados Local:** `SQLite + sqlcipher` para criptografia transparente e robusta em disco.
 
 ### Extensão Web (Firefox / Chrome)
-*   **Tecnologia:** HTML/CSS/JS puros ou React minimalista.
-*   **Comunicação Segura:** **Native Messaging API**. A extensão *não* conterá lógica de decodificação do cofre nem a senha mestra. Em vez disso, ela se comunicará via Native Messaging com o aplicativo Desktop (ou um daemon extraído dele).
-*   **Alternativa Autônoma:** Se o usuário desejar usar a extensão de forma 100% autônoma (sem o app desktop instalado), a extensão integrará a lógica criptográfica em WebAssembly (usando algo como `libsodium.js` ou Web Crypto API) para decodificar o arquivo recuperado do Google Drive em memória.
+*   **Tecnologia:** HTML/CSS/JS puros ou framework web minimalista (como Svelte) empacotado como WebExtension (Manifest V3).
+*   **Criptografia na Extensão:** Utilizar WebAssembly (`libsodium.js` ou Web Crypto API) para decodificar o arquivo recuperado do Google Drive em memória caso seja executado de forma 100% autônoma.
+*   **Comunicação Segura:** Se o app Desktop estiver rodando, a extensão deve usar **Native Messaging API** para se comunicar com o app, solicitando os códigos sem precisar lidar com a senha mestra.
 
 ### Sincronização Cloud
 *   **API:** Google Drive REST API.
-*   **Integração:** Implementada inteiramente no Node.js (Main Process) com fluxo OAuth2 para autorização.
+*   **Integração:** Implementada no backend (Rust/Node) com fluxo OAuth2.
 
 ---
 
 ## B. Arquitetura de Segurança: O Fluxo Zero-Knowledge
 
-A fundação do aplicativo é o modelo Zero-Knowledge. Nem o Google, nem potenciais atacantes com acesso físico ao disco (em estado de repouso) devem ser capazes de extrair as chaves.
+A fundação do aplicativo é o modelo Zero-Knowledge. Nem o Google, nem potenciais atacantes com acesso físico ao disco em repouso devem ser capazes de extrair as chaves.
 
 ### 1. Derivação da Chave (Key Derivation)
 A "Senha Mestra" digitada pelo usuário nunca é usada diretamente como chave de criptografia.
-*   **Algoritmo:** **Argon2id** (fortemente recomendado sobre PBKDF2 devido à sua resistência a ataques por GPU e ASIC). Se a biblioteca Argon2 não estiver disponível nativamente, o fallback será **PBKDF2 com HMAC-SHA256** (no mínimo 600.000 iterações, com um salt aleatório longo gerado por dispositivo).
+*   **Algoritmo:** **Argon2id** (fortemente recomendado devido à sua resistência a ataques por GPU e ASIC).
 *   **Processo:** `Senha Mestra + Salt Aleatório -> Chave de Encriptação do Cofre (KDF_Key)`.
-*   **Armazenamento de Senha:** O aplicativo *nunca* armazena a Senha Mestra em disco. Armazena apenas o Salt e um "Verification Hash" (um hash do KDF_Key) para validar rapidamente se a senha digitada está correta antes de tentar decriptar o banco inteiro.
+*   **Armazenamento de Senha:** O aplicativo *nunca* armazena a Senha Mestra em disco. Armazena apenas o Salt e um "Verification Hash" (um hash do KDF_Key) para validar rapidamente se a senha digitada está correta.
 
 ### 2. Criptografia em Repouso
-O cofre (banco de dados ou arquivo JSON) contendo os segredos 2FA (TOTP) é encriptado antes de ser gravado em disco.
-*   **Algoritmo:** **AES-256-GCM** (Galois/Counter Mode). É mandatório usar um modo autenticado (AEAD) como o GCM. Isso previne que atacantes alterem o arquivo criptografado (ataques de maleabilidade) sem serem detectados.
-*   **Vetor de Inicialização (IV):** Um nonce/IV aleatório de 12 bytes gerado criptograficamente forte para *cada* gravação de arquivo. Nunca reutilizar o IV.
+O cofre (banco de dados ou arquivo) contendo os segredos 2FA é encriptado antes de ser gravado em disco.
+*   **Algoritmo:** **AES-256-GCM** (Galois/Counter Mode). É mandatório usar um modo autenticado (AEAD) como o GCM para prevenir ataques de maleabilidade.
+*   **Vetor de Inicialização (IV):** Um nonce/IV aleatório criptograficamente forte para *cada* gravação de arquivo. Nunca reutilizar o IV.
 
 ### 3. Proteção em Memória
-As chaves 2FA (texto plano) devem residir na memória apenas o tempo estritamente necessário.
-*   O cálculo do token TOTP (usando bibliotecas como `otpauth`) será feito no Main Process (Node.js).
-*   O Renderer Process (React/Interface) receberá apenas o código de 6 dígitos gerado e, no máximo, a URI `otpauth://` temporariamente durante edição ou exibição de QR Code.
-*   Buffers contendo chaves cruas devem ser ativamente sobrescritos (zeroed out) na memória se possível, embora o garbage collector do v8 dificulte essa garantia absoluta. Ao menos, limitamos o escopo das variáveis.
+As chaves privadas não devem ficar em memória mais do que o necessário.
+*   **Limitação de Escopo:** Variáveis que armazenam a chave não criptografada só existem durante o processamento do código TOTP, idealmente zeroizadas ou destruídas do escopo o mais rápido possível para aproveitar o garbage collector ou ser descartado ativamente (se em Rust).
+*   **Interface Limpa:** A interface de usuário acessa o TOTP final (os 6 dígitos) sem guardar em memória o token root que o gerou na visualização diária.
 
 ### 4. O Fluxo de Backup (Google Drive)
-*   **Zero-Knowledge:** O aplicativo local criptografa o arquivo completo (`vault.enc`) usando a arquitetura AES-256-GCM descrita.
-*   O aplicativo realiza o upload do binário `vault.enc` diretamente para o Google Drive através da API OAuth.
-*   O Google apenas vê bytes ininteligíveis. Sem a Senha Mestra (que nunca sai da cabeça do usuário ou, temporariamente, da memória RAM do dispositivo local), o arquivo é inútil para o Google, para hackers ou para governos.
+*   **Zero-Knowledge:** O aplicativo local criptografa o arquivo completo (`vault.enc`) usando AES-256-GCM.
+*   O aplicativo faz o upload do binário `vault.enc` diretamente para o Google Drive.
+*   O Google apenas vê bytes ininteligíveis. Sem a Senha Mestra, o arquivo é inútil para terceiros.
 
 ---
 
@@ -82,38 +78,30 @@ Existem duas abordagens. Proponho a **Opção 2 (CRDT / Event Sourcing Log)** po
 
 ## D. Plano de Desenvolvimento (Roadmap)
 
-Dividiremos a construção em 4 fases claras e iterativas.
+O desenvolvimento será dividido em 4 fases incrementais.
 
-### Fase 1: MVP (Minimum Viable Product) Local-First Seguríssimo
-**Foco:** Funcionalidade principal de geração de códigos e criptografia blindada em disco local. Sem nuvem. Sem extensão.
-1.  Setup base do projeto (Electron + React + TypeScript + Webpack/Vite).
-2.  Implementar motor de criptografia no Main Process (AES-256-GCM, PBKDF2/Argon2 para a Senha Mestra).
-3.  Criação da interface de usuário (UI): Formulário para adicionar conta, visualização em Grade e Lista.
-4.  Lógica TOTP (gerar códigos de 6 dígitos baseados na hora local e atualizar barra de progresso a cada 30s).
-5.  Implementação do isolamento seguro entre interface (Renderer) e regras de segurança (Main Process) via `contextBridge`.
-6.  *Auditoria de segurança interna: garantir que o cofre salva criptografado e não vaza em memória.*
+### Fase 1: MVP (Minimum Viable Product) Local-First
+**Foco:** Funcionalidade principal de geração de códigos e criptografia forte em disco.
+*   Setup do projeto base e UI principal (Lista e Grade).
+*   Implementação do motor de criptografia (Argon2id + AES-256-GCM).
+*   Formulário para adicionar contas e lógica de geração de tokens (TOTP RFC 6238).
+*   Auditoria básica de segurança: garantir que dados em repouso são protegidos e IVs não são reutilizados.
 
 ### Fase 2: Integração Cloud (Google Drive Sync)
-**Foco:** Garantir que o usuário não perca seus dados se o HD queimar. Zero-Knowledge backup.
-1.  Registro no Google Cloud Console e configuração de credenciais OAuth2 para API do Drive.
-2.  Implementação do fluxo de autenticação OAuth2 no app Desktop (abrindo navegador e redirecionando para localhost ou URI customizada).
-3.  Implementação da lógica de Upload e Download do cofre criptografado (`vault.enc`) usando a API do Drive.
-4.  Implementação da **Opção 1 (Merge de Timestamps)** para resolução de conflitos, incluindo lidar com "Tombstones" (deleções).
-5.  Automação do Sync: Sincronizar ao abrir o app e ao fazer mudanças (se online).
+**Foco:** Backup Zero-Knowledge.
+*   Registro de App no Google Cloud e fluxo OAuth2 no app desktop.
+*   Implementação do upload/download do `vault.enc` na API do Google Drive.
+*   Lógica de resolução de conflitos (Timestamps e Tombstones) e mesclagem de cofres offline/online.
 
-### Fase 3: Extensão de Navegador Autônoma (Firefox/Chrome)
-**Foco:** Conveniência (Auto-fill) sem comprometer o modelo Zero-Knowledge.
-1.  Estruturação da Extensão (Manifest V3).
-2.  Implementação da comunicação com Google Drive API diretamente da extensão, recuperando o `vault.enc`.
-3.  Implementar biblioteca criptográfica WebAssembly (ou Web Crypto API) na extensão para derivar chave da Senha Mestra e decodificar o arquivo do Google Drive *completamente dentro do ambiente isolado do navegador*.
-4.  Implementar UI na extensão (popup) para visualizar códigos TOTP e botão de auto-fill na página atual.
-5.  *(Opcional)* Comunicação nativa via *Native Messaging API* com o App Desktop se ele estiver aberto, evitando decriptação dupla.
+### Fase 3: Extensão de Navegador (Firefox)
+**Foco:** Auto-fill seguro e acessibilidade.
+*   Estruturação da WebExtension Manifest V3 para Firefox.
+*   Implementação de Native Messaging API para obter tokens do app Desktop com segurança.
+*   (Alternativa) Integração com Google Drive e Web Crypto/WASM na extensão para decriptação independente (solicitando a senha mestra ao usuário na extensão).
 
-### Fase 4: Polimento, UX e Funcionalidades Avançadas
-**Foco:** Tornar o produto "World-Class" e rivalizar com gigantes.
-1.  Migração de estratégia de resolução de conflitos para **Opção 2 (Log de Operações/CRDT)**.
-2.  Melhoria visual (Prism/Design): Suporte a Temas (Claro/Escuro/Acessibilidade).
-3.  Implementação de bloqueio de aplicativo (Lock Screen) por inatividade com timeout customizável.
-4.  Blur de interface por perda de foco (evitar ombros curiosos).
-5.  Facilidades de importação massiva: ler formato de exportação do Authy, Google Authenticator ou JSON genérico.
-6.  Testes de penetração independentes ou auditoria (Bug Bounty) para confirmar robustez.
+### Fase 4: Polimento e Funcionalidades Avançadas
+**Foco:** UX de primeira linha e integrações.
+*   Facilidades de migração (importar QR codes ou exportações de outros apps como Authy/Google Authenticator).
+*   Refinamentos de UI/UX (atalhos de teclado globais, temas claro/escuro).
+*   Proteções extras: Blur em inatividade/perda de foco da janela, auto-lock com timeout de sessão.
+*   Auditoria de Segurança (PenTest).
