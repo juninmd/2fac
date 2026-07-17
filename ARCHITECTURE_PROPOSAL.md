@@ -105,3 +105,14 @@ O desenvolvimento será dividido em 4 fases incrementais.
 *   Refinamentos de UI/UX (atalhos de teclado globais, temas claro/escuro).
 *   Proteções extras: Blur em inatividade/perda de foco da janela, auto-lock com timeout de sessão.
 *   Auditoria de Segurança (PenTest).
+---
+
+## E. Limitações e Considerações
+
+Embora a arquitetura proposta priorize a segurança extrema, existem algumas limitações inerentes ao modelo adotado:
+
+1.  **Recuperação de Conta:** Em uma arquitetura puramente Zero-Knowledge, a perda da Senha Mestra resulta na perda irrevogável de todos os dados do cofre. Não há mecanismo de "esqueci minha senha" que não comprometa a segurança. É crucial educar o usuário sobre a necessidade de guardar a senha mestra ou backups físicos (papel) dos códigos de recuperação.
+2.  **Complexidade do Sincronismo CRDT:** A implementação de um log de eventos (Event Sourcing / CRDT) aumenta a complexidade de desenvolvimento e o tamanho do cofre ao longo do tempo (embora compactações periódicas - *snapshots* - possam mitigar o crescimento do arquivo).
+3.  **Dependência de APIs Externas:** O sincronismo depende da estabilidade e disponibilidade da API do Google Drive e das regras de autenticação OAuth2 do Google Cloud, que podem mudar.
+4.  **Extensão Autônoma e WebAssembly:** Executar criptografia forte (como Argon2id) diretamente no navegador via WebAssembly pode ter limitações de performance dependendo do hardware do usuário em comparação com o aplicativo nativo (Rust/Tauri).
+5.  **Acesso à Memória (Dump):** Embora as chaves sejam mantidas em memória pelo menor tempo possível, durante o momento da geração do TOTP elas existem em texto plano. Malwares sofisticados com acesso em nível de sistema operacional (ex: rootkits ou dumps de memória) teoricamente poderiam extraí-las no exato milissegundo de uso. As proteções do Electron/Tauri não podem prevenir completamente ataques se o dispositivo físico já estiver totalmente comprometido em nível *kernel*.
