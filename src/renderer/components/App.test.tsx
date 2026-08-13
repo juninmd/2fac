@@ -115,7 +115,7 @@ const mockImportGoogleAuth = jest.fn();
 const mockOnProtocolUrl = jest.fn(() => jest.fn());
 
 beforeAll(() => {
-  (window as any).electron = {
+  (window as unknown as { electron: Partial<import("../../renderer/types").ElectronAPI> }).electron = {
     getSettings: mockGetSettings,
     get2FAItems: mockGet2FAItems,
     add2FAItem: mockAdd2FAItem,

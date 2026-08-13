@@ -9,7 +9,7 @@ const mockCheckMasterPassword = jest.fn();
 const mockSetMasterPassword = jest.fn();
 
 beforeAll(() => {
-  (window as any).electron = {
+  (window as unknown as { electron: Partial<import("../../renderer/types").ElectronAPI> }).electron = {
     setSettings: mockSetSettings,
     getSettings: mockGetSettings,
     checkMasterPassword: mockCheckMasterPassword,

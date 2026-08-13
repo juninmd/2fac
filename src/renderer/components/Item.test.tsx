@@ -12,7 +12,7 @@ jest.mock('../hooks/useToken', () => ({
 // Mock dnd-kit
 const mockUseSortable = jest.fn();
 jest.mock('@dnd-kit/sortable', () => ({
-  useSortable: (args: any) => mockUseSortable(args),
+  useSortable: (args: unknown) => mockUseSortable(args),
 }));
 
 jest.mock('@dnd-kit/utilities', () => ({
