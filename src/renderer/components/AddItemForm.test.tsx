@@ -7,7 +7,7 @@ import { COLORS } from '../constants';
 const mockScanScreenQR = jest.fn();
 
 beforeAll(() => {
-  (window as any).electron = {
+  (window as unknown as { electron: Partial<import("../../renderer/types").ElectronAPI> }).electron = {
     scanScreenQR: mockScanScreenQR,
   };
 });

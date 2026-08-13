@@ -30,13 +30,9 @@ import { TwoFAItem, AppSettings } from './types';
 
 const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
 
-const writeFileAsync = (filePath: string, data: string): Promise<void> =>
-    new Promise((resolve, reject) => {
-        writeFile(filePath, data, 'utf-8', (err) => {
-            if (err) reject(err);
-            else resolve();
-        });
-    });
+const writeFileAsync = async (filePath: string, data: string): Promise<void> => {
+    await writeFile(filePath, data, 'utf-8');
+};
 
 const getErrorMessage = (error: unknown): string =>
     error instanceof Error ? error.message : String(error);

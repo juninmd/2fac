@@ -6,9 +6,9 @@ import * as OTPAuth from 'otpauth';
 // Mock otpauth
 jest.mock('otpauth', () => {
     const Secret = jest.fn();
-    (Secret as any).fromBase32 = jest.fn();
-    (Secret as any).fromHex = jest.fn();
-    (Secret as any).fromLatin1 = jest.fn();
+    (Secret as unknown as { fromBase32: jest.Mock }).fromBase32 = jest.fn();
+    (Secret as unknown as { fromHex: jest.Mock }).fromHex = jest.fn();
+    (Secret as unknown as { fromLatin1: jest.Mock }).fromLatin1 = jest.fn();
 
     return {
         Secret: Secret,
@@ -107,7 +107,7 @@ describe('useToken', () => {
 
         console.error = jest.fn(); // Suppress error log
 
-        const { result } = renderHook(() => useToken(itemInvalid as any));
+        const { result } = renderHook(() => useToken(itemInvalid as unknown as TwoFAItem));
 
         // Should fall back to empty Secret() call in catch block
         expect(OTPAuth.Secret).toHaveBeenCalled();

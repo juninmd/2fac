@@ -8,12 +8,12 @@ const mockUseSortable = jest.fn();
 jest.mock('@dnd-kit/sortable', () => ({
   useSortable: (args: { 
       id: string | number; 
-      items: any[]; 
-      collisionDetection: any; 
-      collisionDetectionArgs?: any; 
-      data: any; 
-      measurementStrategy?: any; 
-      sortingStrategy?: any; 
+      items: unknown[];
+      collisionDetection: unknown;
+      collisionDetectionArgs?: unknown;
+      data: unknown;
+      measurementStrategy?: unknown;
+      sortingStrategy?: unknown;
       freezeDrag?: boolean; 
   }) => mockUseSortable(args),
   SortableContext: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
