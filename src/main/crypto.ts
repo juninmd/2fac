@@ -1,21 +1,31 @@
 import * as crypto from 'crypto';
 import { promisify } from 'util';
+import * as argon2 from 'argon2';
 import { EncryptedBackup } from './types';
 
 const ENCRYPTION_ALGORITHM = 'aes-256-gcm';
 const KEY_LENGTH = 32;
 const IV_LENGTH = 16;
-const PBKDF2_ITERATIONS = 100000;
 
-const pbkdf2 = promisify<Buffer | string, Buffer, number, number, string, Buffer>(crypto.pbkdf2);
+export const getArgonKey = async (password: string, salt: Buffer): Promise<Buffer> => {
+    const hash = await argon2.hash(password, {
+        type: argon2.argon2id,
+        salt,
+        hashLength: KEY_LENGTH,
+        raw: true
+    });
+    return hash;
+};
 
-export const hashPassword = (password: string): string => {
-    return crypto.createHash('sha256').update(password).digest('hex');
+export const hashPassword = async (password: string, salt: string): Promise<string> => {
+    const saltBuffer = Buffer.from(salt, 'hex');
+    const key = await getArgonKey(password, saltBuffer);
+    return crypto.createHash('sha256').update(key).digest('hex');
 };
 
 export const encryptData = async (data: string, password: string): Promise<EncryptedBackup> => {
     const salt = crypto.randomBytes(32);
-    const key = await pbkdf2(password, salt, PBKDF2_ITERATIONS, KEY_LENGTH, 'sha256');
+    const key = await getArgonKey(password, salt);
     const iv = crypto.randomBytes(IV_LENGTH);
 
     const cipher = crypto.createCipheriv(ENCRYPTION_ALGORITHM, key, iv);
@@ -37,7 +47,7 @@ export const decryptData = async (backup: EncryptedBackup, password: string): Pr
     const iv = Buffer.from(backup.iv, 'hex');
     const authTag = Buffer.from(backup.authTag, 'hex');
 
-    const key = await pbkdf2(password, salt, PBKDF2_ITERATIONS, KEY_LENGTH, 'sha256');
+    const key = await getArgonKey(password, salt);
     const decipher = crypto.createDecipheriv(ENCRYPTION_ALGORITHM, key, iv);
     decipher.setAuthTag(authTag);
 

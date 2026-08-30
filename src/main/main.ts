@@ -20,6 +20,7 @@ import {
     setAppSettings,
 } from './store';
 import { hashPassword, encryptData } from './crypto';
+import * as crypto from 'crypto';
 import {
     importGoogleAuth,
     importAuthy,
@@ -351,16 +352,18 @@ ipcMain.handle('scan-screen-qr', async () => {
     }
 });
 
-ipcMain.handle('set-master-password', (_event, password: string) => {
-    const hash = hashPassword(password);
-    store.set('masterPassword', hash);
+ipcMain.handle('set-master-password', async (_event, password: string) => {
+    const salt = crypto.randomBytes(32).toString('hex');
+    const hash = await hashPassword(password, salt);
+    store.set('masterPassword', { hash, salt });
     return true;
 });
 
-ipcMain.handle('check-master-password', (_event, password: string) => {
-    const savedHash = store.get('masterPassword');
-    const hash = hashPassword(password);
-    return savedHash === hash;
+ipcMain.handle('check-master-password', async (_event, password: string) => {
+    const savedData = store.get('masterPassword') as { hash: string; salt: string } | undefined;
+    if (!savedData || !savedData.salt || !savedData.hash) return false;
+    const hash = await hashPassword(password, savedData.salt);
+    return savedData.hash === hash;
 });
 
 ipcMain.handle('has-master-password', () => {
