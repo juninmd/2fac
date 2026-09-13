@@ -18,8 +18,10 @@ import {
     updateTwoFAItem,
     getAppSettings,
     setAppSettings,
+    setSessionKey,
+    getSessionKey,
 } from './store';
-import { hashPassword, encryptData } from './crypto';
+import { hashPassword, encryptData, getArgonKey } from './crypto';
 import * as crypto from 'crypto';
 import {
     importGoogleAuth,
@@ -356,6 +358,15 @@ ipcMain.handle('set-master-password', async (_event, password: string) => {
     const salt = crypto.randomBytes(32).toString('hex');
     const hash = await hashPassword(password, salt);
     store.set('masterPassword', { hash, salt });
+
+    // Derive key and set session key
+    const saltBuffer = Buffer.from(salt, 'hex');
+    const key = await getArgonKey(password, saltBuffer);
+    setSessionKey(key);
+
+    // Trigger a read which will encrypt existing plaintext items
+    getTwoFAItems(store);
+
     return true;
 });
 
@@ -363,7 +374,20 @@ ipcMain.handle('check-master-password', async (_event, password: string) => {
     const savedData = store.get('masterPassword') as { hash: string; salt: string } | undefined;
     if (!savedData || !savedData.salt || !savedData.hash) return false;
     const hash = await hashPassword(password, savedData.salt);
-    return savedData.hash === hash;
+
+    const isValid = savedData.hash === hash;
+    if (isValid) {
+        const saltBuffer = Buffer.from(savedData.salt, 'hex');
+        const key = await getArgonKey(password, saltBuffer);
+        setSessionKey(key);
+    }
+
+    return isValid;
+});
+
+ipcMain.handle('lock-app', () => {
+    setSessionKey(null);
+    return true;
 });
 
 ipcMain.handle('has-master-password', () => {

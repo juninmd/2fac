@@ -195,6 +195,14 @@ const App: React.FC = () => {
         }
     }, [searchQuery, items]);
 
+    useEffect(() => {
+        if (isLocked) {
+            if (window.electron.lockApp) {
+                window.electron.lockApp().catch(console.error);
+            }
+        }
+    }, [isLocked]);
+
     const handleUnlock = () => {
         setIsLocked(false);
     };

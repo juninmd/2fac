@@ -1,5 +1,6 @@
 import Store from 'electron-store';
-import { TwoFAItem, AppSettings } from './types';
+import { TwoFAItem, AppSettings, EncryptedBackup } from './types';
+import { encryptDataWithKey, decryptDataWithKey } from './crypto';
 
 const DEFAULT_SETTINGS: AppSettings = {
     minimizeToTray: false,
@@ -9,14 +10,60 @@ const DEFAULT_SETTINGS: AppSettings = {
     blurOnInactive: true,
 };
 
+let sessionKey: Buffer | null = null;
+
+export const setSessionKey = (key: Buffer | null): void => {
+    if (!key && sessionKey) {
+        sessionKey.fill(0);
+    }
+    sessionKey = key;
+};
+
+export const getSessionKey = (): Buffer | null => {
+    return sessionKey;
+};
+
 export const createStore = (): Store => new Store();
 
 export const getTwoFAItems = (store: Store): TwoFAItem[] => {
-    return (store.get('twoFAItems', []) as TwoFAItem[]);
+    if (store.has('encryptedVault')) {
+        if (!sessionKey) {
+            console.warn('Attempted to read encrypted vault without session key');
+            return []; // Or throw error
+        }
+        try {
+            const encryptedBackup = store.get('encryptedVault') as EncryptedBackup;
+            const decrypted = decryptDataWithKey(encryptedBackup, sessionKey);
+            return JSON.parse(decrypted) as TwoFAItem[];
+        } catch (error) {
+            console.error('Failed to decrypt vault:', error);
+            return [];
+        }
+    }
+
+    // Fallback to plain text, and migrate if session key is present
+    const items = (store.get('twoFAItems', []) as TwoFAItem[]);
+    if (sessionKey && items.length > 0) {
+        setTwoFAItems(store, items); // This will save encrypted and delete plain
+    }
+    return items;
 };
 
 export const setTwoFAItems = (store: Store, items: TwoFAItem[]): void => {
-    store.set('twoFAItems', items);
+    if (sessionKey) {
+        const data = JSON.stringify(items);
+        const encrypted = encryptDataWithKey(data, sessionKey);
+        store.set('encryptedVault', encrypted);
+        if (store.has('twoFAItems')) {
+            store.delete('twoFAItems');
+        }
+    } else {
+        if (store.has('encryptedVault')) {
+            console.warn('Attempted to overwrite encrypted vault without session key. Operation aborted to prevent data loss.');
+            return;
+        }
+        store.set('twoFAItems', items);
+    }
 };
 
 export const addTwoFAItem = (store: Store, item: Omit<TwoFAItem, 'id'>): TwoFAItem => {
