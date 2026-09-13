@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('electron', {
     scanScreenQR: () => ipcRenderer.invoke('scan-screen-qr'),
     setMasterPassword: (password: string) => ipcRenderer.invoke('set-master-password', password),
     checkMasterPassword: (password: string) => ipcRenderer.invoke('check-master-password', password),
+    lockApp: () => ipcRenderer.invoke('lock-app'),
     hasMasterPassword: () => ipcRenderer.invoke('has-master-password'),
     set2FAItems: (items: TwoFAItem[]) => ipcRenderer.invoke('set-2fa-items', items),
     getSettings: () => ipcRenderer.invoke('get-settings'),

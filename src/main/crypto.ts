@@ -23,6 +23,37 @@ export const hashPassword = async (password: string, salt: string): Promise<stri
     return crypto.createHash('sha256').update(key).digest('hex');
 };
 
+export const encryptDataWithKey = (data: string, key: Buffer): EncryptedBackup => {
+    const salt = crypto.randomBytes(32);
+    const iv = crypto.randomBytes(IV_LENGTH);
+
+    const cipher = crypto.createCipheriv(ENCRYPTION_ALGORITHM, key, iv);
+    let encrypted = cipher.update(data, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    const authTag = cipher.getAuthTag();
+
+    return {
+        version: 1,
+        salt: salt.toString('hex'),
+        iv: iv.toString('hex'),
+        authTag: authTag.toString('hex'),
+        data: encrypted,
+    };
+};
+
+export const decryptDataWithKey = (backup: EncryptedBackup, key: Buffer): string => {
+    const iv = Buffer.from(backup.iv, 'hex');
+    const authTag = Buffer.from(backup.authTag, 'hex');
+
+    const decipher = crypto.createDecipheriv(ENCRYPTION_ALGORITHM, key, iv);
+    decipher.setAuthTag(authTag);
+
+    let decrypted = decipher.update(backup.data, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+
+    return decrypted;
+};
+
 export const encryptData = async (data: string, password: string): Promise<EncryptedBackup> => {
     const salt = crypto.randomBytes(32);
     const key = await getArgonKey(password, salt);

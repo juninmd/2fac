@@ -27,6 +27,7 @@ export interface ElectronAPI {
     scanScreenQR: () => Promise<{ success: boolean; data?: string; error?: string }>;
     setMasterPassword: (password: string) => Promise<boolean>;
     checkMasterPassword: (password: string) => Promise<boolean>;
+    lockApp: () => Promise<boolean>;
     hasMasterPassword: () => Promise<boolean>;
     set2FAItems: (items: TwoFAItem[]) => Promise<boolean>;
     getSettings: () => Promise<AppSettings>;
