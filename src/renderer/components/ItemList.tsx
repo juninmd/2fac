@@ -10,9 +10,10 @@ interface ItemListProps {
     onMove: (id: string, direction: 'up' | 'down') => void;
     viewMode: 'list' | 'grid';
     isDragEnabled: boolean;
+    maskSecrets: boolean;
 }
 
-const ItemList: React.FC<ItemListProps> = ({ items, onRemove, onUpdate, onMove, viewMode, isDragEnabled }) => {
+const ItemList: React.FC<ItemListProps> = ({ items, onRemove, onUpdate, onMove, viewMode, isDragEnabled, maskSecrets }) => {
     const strategy = viewMode === 'grid' ? rectSortingStrategy : verticalListSortingStrategy;
 
     // Group items by category to preserve existing global order array (DND) but visually distinct
@@ -44,6 +45,7 @@ const ItemList: React.FC<ItemListProps> = ({ items, onRemove, onUpdate, onMove, 
                                 isFirst={index === 0}
                                 isLast={index === items.length - 1}
                                 isDragEnabled={isDragEnabled}
+                                maskSecrets={maskSecrets}
                             />
                         </React.Fragment>
                     );

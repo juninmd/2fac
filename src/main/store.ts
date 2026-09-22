@@ -8,6 +8,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     autoLock: true,
     autoLockTimeout: 5,
     blurOnInactive: true,
+    maskSecrets: true,
 };
 
 let sessionKey: Buffer | null = null;

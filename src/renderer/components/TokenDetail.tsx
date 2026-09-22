@@ -8,13 +8,20 @@ interface TokenDetailProps {
     item: TwoFAItem;
     onUpdate: (id: string, item: Partial<TwoFAItem>) => void;
     onRemove: (id: string) => void;
+    maskSecrets: boolean;
 }
 
-const TokenDetail: React.FC<TokenDetailProps> = ({ item, onUpdate, onRemove }) => {
+const TokenDetail: React.FC<TokenDetailProps> = ({ item, onUpdate, onRemove, maskSecrets }) => {
     const { token, timeLeft, period } = useToken(item);
     const [copied, setCopied] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState({ account: item.account, issuer: item.issuer, color: item.color ?? '#e23e3e', category: item.category ?? '' });
+    const [isRevealed, setIsRevealed] = useState(false);
+
+    React.useEffect(() => {
+        setIsRevealed(false);
+    }, [token]);
+
 
     // Sync form with item changes
     React.useEffect(() => {
@@ -143,7 +150,17 @@ const TokenDetail: React.FC<TokenDetailProps> = ({ item, onUpdate, onRemove }) =
 
             <div className="detail-main">
                 <div className="big-token-container" onClick={copyToClipboard}>
-                    <span className="big-token">{token}</span>
+                    <span
+                        className="big-token"
+                        onClick={(e) => {
+                            if (maskSecrets && !isRevealed) {
+                                e.stopPropagation();
+                                setIsRevealed(true);
+                            }
+                        }}
+                    >
+                        {(!maskSecrets || isRevealed) ? token : (token.length > 7 ? '••••••••' : '••• •••')}
+                    </span>
                     <button className="copy-btn" title="Copiar">
                         {copied ? '✓' : '❐'}
                     </button>

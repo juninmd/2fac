@@ -76,7 +76,7 @@ describe('Item', () => {
       viewMode="grid"
       isFirst={false}
       isLast={false}
-      isDragEnabled={false}
+      isDragEnabled={false} maskSecrets={false}
     />);
 
     expect(screen.getByText('Google')).toBeInTheDocument();
@@ -94,7 +94,7 @@ describe('Item', () => {
         viewMode="grid"
         isFirst={false}
         isLast={false}
-        isDragEnabled={false}
+        isDragEnabled={false} maskSecrets={false}
       />);
 
       // Should default to '?' for icon
@@ -116,7 +116,7 @@ describe('Item', () => {
         viewMode="grid"
         isFirst={false}
         isLast={false}
-        isDragEnabled={false}
+        isDragEnabled={false} maskSecrets={false}
       />);
 
       expect(screen.getByText('123 456')).toBeInTheDocument();
@@ -140,7 +140,7 @@ describe('Item', () => {
         viewMode="grid"
         isFirst={false}
         isLast={false}
-        isDragEnabled={true}
+        isDragEnabled={true} maskSecrets={false}
       />);
 
       expect(container.firstChild).toHaveClass('dragging');
@@ -155,7 +155,7 @@ describe('Item', () => {
       viewMode="grid"
       isFirst={false}
       isLast={false}
-      isDragEnabled={false}
+      isDragEnabled={false} maskSecrets={false}
     />);
 
     fireEvent.click(screen.getByText('123 456'));
@@ -177,7 +177,7 @@ describe('Item', () => {
       viewMode="grid"
       isFirst={false}
       isLast={false}
-      isDragEnabled={false}
+      isDragEnabled={false} maskSecrets={false}
     />);
 
     fireEvent.click(screen.getByTitle('Editar'));
@@ -204,7 +204,7 @@ describe('Item', () => {
       viewMode="grid"
       isFirst={false}
       isLast={false}
-      isDragEnabled={false}
+      isDragEnabled={false} maskSecrets={false}
     />);
 
     fireEvent.click(screen.getByTitle('Editar'));
@@ -224,7 +224,7 @@ describe('Item', () => {
         viewMode="grid"
         isFirst={false}
         isLast={false}
-        isDragEnabled={false}
+        isDragEnabled={false} maskSecrets={false}
       />);
 
       fireEvent.click(screen.getByTitle('Remover'));
@@ -244,7 +244,7 @@ describe('Item', () => {
         viewMode="grid"
         isFirst={false}
         isLast={false}
-        isDragEnabled={false}
+        isDragEnabled={false} maskSecrets={false}
       />);
 
       fireEvent.click(screen.getByTitle('Remover'));
@@ -262,7 +262,7 @@ describe('Item', () => {
         viewMode="grid"
         isFirst={false} // Should show UP
         isLast={false}  // Should show DOWN
-        isDragEnabled={false}
+        isDragEnabled={false} maskSecrets={false}
       />);
 
       fireEvent.click(screen.getByTitle('Mover para Cima'));
@@ -281,7 +281,7 @@ describe('Item', () => {
         viewMode="grid"
         isFirst={true}
         isLast={false}
-        isDragEnabled={false}
+        isDragEnabled={false} maskSecrets={false}
       />);
 
       expect(screen.queryByTitle('Mover para Cima')).not.toBeInTheDocument();
@@ -295,7 +295,7 @@ describe('Item', () => {
         viewMode="grid"
         isFirst={false}
         isLast={true}
-        isDragEnabled={false}
+        isDragEnabled={false} maskSecrets={false}
       />);
 
       expect(screen.getByTitle('Mover para Cima')).toBeInTheDocument();
@@ -311,7 +311,7 @@ describe('Item', () => {
             viewMode="grid"
             isFirst={false}
             isLast={false}
-            isDragEnabled={false}
+            isDragEnabled={false} maskSecrets={false}
         />);
 
         fireEvent.click(screen.getByTitle('Editar'));
@@ -337,9 +337,59 @@ describe('Item', () => {
             viewMode="list"
             isFirst={false}
             isLast={false}
-            isDragEnabled={false}
+            isDragEnabled={false} maskSecrets={false}
         />);
 
         expect(container.firstChild).toHaveClass('list-item');
+    });
+});
+
+describe('Item', () => {
+    const mockItem = {
+        id: '1',
+        account: 'test@test.com',
+        issuer: 'Test',
+        secret: 'JBSWY3DPEHPK3PXP',
+    };
+    const mockOnRemove = jest.fn();
+    const mockOnUpdate = jest.fn();
+    const mockOnMove = jest.fn();
+    it('masks and unmasks secrets based on maskSecrets prop', () => {
+        const { rerender } = render(
+            <Item
+                item={mockItem}
+                onRemove={mockOnRemove}
+                onUpdate={mockOnUpdate}
+                onMove={mockOnMove}
+                viewMode="grid"
+                isFirst={false}
+                isLast={false}
+                isDragEnabled={false}
+                maskSecrets={true}
+            />
+        );
+
+        // By default should be masked (6 digits = ••• •••)
+        expect(screen.getByText('••• •••')).toBeInTheDocument();
+
+        // Click to unmask
+        fireEvent.click(screen.getByText('••• •••'));
+        expect(screen.getByText('123 456')).toBeInTheDocument();
+
+        // Re-render with maskSecrets false
+        rerender(
+            <Item
+                item={mockItem}
+                onRemove={mockOnRemove}
+                onUpdate={mockOnUpdate}
+                onMove={mockOnMove}
+                viewMode="grid"
+                isFirst={false}
+                isLast={false}
+                isDragEnabled={false}
+                maskSecrets={false}
+            />
+        );
+        expect(screen.getByText('123 456')).toBeInTheDocument();
     });
 });

@@ -46,7 +46,7 @@ describe('ItemList', () => {
         onRemove={mockOnRemove}
         onUpdate={mockOnUpdate}
         onMove={mockOnMove}
-        isDragEnabled={true}
+        isDragEnabled={true} maskSecrets={false}
     />);
 
     expect(screen.getByTestId('sortable-context')).toBeInTheDocument();
@@ -61,7 +61,7 @@ describe('ItemList', () => {
         onRemove={mockOnRemove}
         onUpdate={mockOnUpdate}
         onMove={mockOnMove}
-        isDragEnabled={true}
+        isDragEnabled={true} maskSecrets={false}
     />);
 
     expect(container.firstChild).toHaveClass('item-list list-mode');
@@ -74,7 +74,7 @@ describe('ItemList', () => {
         onRemove={mockOnRemove}
         onUpdate={mockOnUpdate}
         onMove={mockOnMove}
-        isDragEnabled={true}
+        isDragEnabled={true} maskSecrets={false}
     />);
 
     expect(container.firstChild).toHaveClass('item-list grid-mode');
