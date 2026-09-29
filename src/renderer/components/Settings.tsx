@@ -28,6 +28,7 @@ const Settings: React.FC<SettingsProps> = ({
         autoLock: true,
         autoLockTimeout: 5,
         blurOnInactive: true,
+        maskSecrets: true,
         theme: 'dark',
         accentColor: '#e23e3e'
     });
@@ -223,6 +224,26 @@ const Settings: React.FC<SettingsProps> = ({
                                 />
                                 Desfocar ao perder foco da janela
                             </label>
+                        <div className="setting-item">
+
+                            <label className="setting-label">
+
+                                <input
+
+                                    type="checkbox"
+
+                                    checked={settings.maskSecrets}
+
+                                    onChange={(e) => handleSettingChange('maskSecrets', e.target.checked)}
+
+                                />
+
+                                Ocultar códigos 2FA na interface
+
+                            </label>
+
+                        </div>
+
                         </div>
 
                         <div className="settings-section" style={{ borderTop: 'none', paddingTop: 0 }}>

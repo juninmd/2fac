@@ -41,6 +41,7 @@ export interface AppSettings {
     autoLock: boolean;
     autoLockTimeout: number;
     blurOnInactive: boolean;
+    maskSecrets: boolean;
     theme?: 'light' | 'dark';
     accentColor?: string;
 }

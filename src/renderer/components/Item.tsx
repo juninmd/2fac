@@ -15,13 +15,20 @@ interface TwoFAItemProps {
     isFirst: boolean;
     isLast: boolean;
     isDragEnabled: boolean;
+    maskSecrets: boolean;
 }
 
-const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, onMove, viewMode, isFirst, isLast, isDragEnabled }) => {
+const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, onMove, viewMode, isFirst, isLast, isDragEnabled, maskSecrets }) => {
     const { token, timeLeft, period } = useToken(item);
     const [copied, setCopied] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState({ account: item.account, issuer: item.issuer, color: item.color ?? '#e23e3e' });
+    const [isRevealed, setIsRevealed] = useState(false);
+
+    React.useEffect(() => {
+        setIsRevealed(false);
+    }, [token]);
+
 
     const copyToClipboard = () => {
         const rawToken = token.replace(/\s/g, '');
@@ -143,7 +150,18 @@ const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, onMove, view
             </div>
 
             <div className="token-display">
-                <span className="token">{token}</span>
+                <span
+                    className="token"
+                    onClick={(e) => {
+                        if (maskSecrets && !isRevealed) {
+                            e.stopPropagation();
+                            setIsRevealed(true);
+                        }
+                    }}
+                    style={{ cursor: (maskSecrets && !isRevealed) ? 'pointer' : 'inherit' }}
+                >
+                    {(!maskSecrets || isRevealed) ? token : (token.length > 7 ? '••••••••' : '••• •••')}
+                </span>
                 <div className="circular-timer">
                     <svg width="24" height="24" viewBox="0 0 24 24">
                         <circle

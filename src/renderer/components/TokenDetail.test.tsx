@@ -42,7 +42,7 @@ describe('TokenDetail', () => {
   });
 
   it('renders details', () => {
-    render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} />);
+    render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={false} />);
 
     expect(screen.getByText('Google')).toBeInTheDocument();
     expect(screen.getByText('test@example.com')).toBeInTheDocument();
@@ -51,7 +51,7 @@ describe('TokenDetail', () => {
   });
 
   it('copies token to clipboard', async () => {
-    render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} />);
+    render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={false} />);
 
     fireEvent.click(screen.getByText('123 456'));
 
@@ -64,7 +64,7 @@ describe('TokenDetail', () => {
   });
 
   it('enters edit mode and updates issuer and account', () => {
-    render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} />);
+    render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={false} />);
 
     fireEvent.click(screen.getByText('✎ Editar'));
 
@@ -85,7 +85,7 @@ describe('TokenDetail', () => {
   });
 
   it('cancels edit mode', () => {
-    render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} />);
+    render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={false} />);
 
     fireEvent.click(screen.getByText('✎ Editar'));
     fireEvent.click(screen.getByText('Cancelar'));
@@ -96,7 +96,7 @@ describe('TokenDetail', () => {
 
   it('handles delete', () => {
       const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
-      render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} />);
+      render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={false} />);
 
       fireEvent.click(screen.getByText('✕ Remover'));
 
@@ -107,7 +107,7 @@ describe('TokenDetail', () => {
 
   it('cancels delete', () => {
       const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(false);
-      render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} />);
+      render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={false} />);
 
       fireEvent.click(screen.getByText('✕ Remover'));
 
@@ -116,10 +116,10 @@ describe('TokenDetail', () => {
   });
 
   it('updates state when item prop changes', () => {
-      const { rerender } = render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} />);
+      const { rerender } = render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={false} />);
 
       const newItem = { ...mockItem, issuer: 'New Issuer' };
-      rerender(<TokenDetail item={newItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} />);
+      rerender(<TokenDetail item={newItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={false} />);
 
       expect(screen.getByText('New Issuer')).toBeInTheDocument();
 
@@ -134,20 +134,20 @@ describe('TokenDetail', () => {
           timeLeft: 5,
           period: 30
       });
-      render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} />);
+      render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={false} />);
 
       expect(screen.getByText('5s')).toBeInTheDocument();
   });
 
   it('renders default icon/color if missing', () => {
       const itemNoColor = { ...mockItem, color: undefined, issuer: '' };
-      render(<TokenDetail item={itemNoColor} onUpdate={mockOnUpdate} onRemove={mockOnRemove} />);
+      render(<TokenDetail item={itemNoColor} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={false} />);
 
       expect(screen.getByText('?')).toBeInTheDocument();
   });
 
   it('changes color in edit mode', () => {
-        render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} />);
+        render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={false} />);
 
         fireEvent.click(screen.getByText('✎ Editar'));
 
@@ -164,7 +164,7 @@ describe('TokenDetail', () => {
     });
 
     it('copies token on Ctrl+C', () => {
-        render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} />);
+        render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={false} />);
 
         fireEvent.keyDown(window, { key: 'c', ctrlKey: true });
 
@@ -173,7 +173,7 @@ describe('TokenDetail', () => {
     });
 
     it('does not copy on Ctrl+C if editing', () => {
-        render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} />);
+        render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={false} />);
 
         // Enter edit mode
         fireEvent.click(screen.getByText('✎ Editar'));
@@ -184,5 +184,31 @@ describe('TokenDetail', () => {
         fireEvent.keyDown(window, { key: 'c', ctrlKey: true });
 
         expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+    });
+});
+
+describe('TokenDetail', () => {
+    const mockItem = {
+        id: '1',
+        account: 'test@test.com',
+        issuer: 'Test',
+        secret: 'JBSWY3DPEHPK3PXP',
+    };
+    const mockOnRemove = jest.fn();
+    const mockOnUpdate = jest.fn();
+    it('masks and unmasks secrets based on maskSecrets prop', () => {
+        const { rerender } = render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={true} />);
+
+        // By default should be masked
+        expect(screen.getByText('••• •••')).toBeInTheDocument();
+
+        // Click to unmask
+        fireEvent.click(screen.getByText('••• •••'));
+        expect(screen.getByText('123 456')).toBeInTheDocument();
+
+        // Re-render with maskSecrets false
+        rerender(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={false} />);
+
+        expect(screen.getByText('123 456')).toBeInTheDocument();
     });
 });

@@ -479,6 +479,7 @@ const App: React.FC = () => {
                                     item={items.find(i => i.id === selectedItemId)!}
                                     onUpdate={handleUpdateItem}
                                     onRemove={handleRemoveItem}
+                                    maskSecrets={settings?.maskSecrets ?? true}
                                 />
                             ) : (
                                 <div className="empty-state">
@@ -526,6 +527,7 @@ const App: React.FC = () => {
                                     onUpdate={handleUpdateItem}
                                     onMove={handleMoveItem}
                                     isDragEnabled={searchQuery.trim() === ''}
+                                    maskSecrets={settings?.maskSecrets ?? true}
                                 />
                             </DndContext>
                         )}

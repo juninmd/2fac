@@ -19,6 +19,7 @@ export interface AppSettings {
     autoLock: boolean;
     autoLockTimeout: number;
     blurOnInactive: boolean;
+    maskSecrets: boolean;
 }
 
 export interface EncryptedBackup {
