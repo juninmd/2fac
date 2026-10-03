@@ -5,7 +5,7 @@
   "main": "dist/main/main.js",
   "type": "module",
   "homepage": "./",
-  "author": "",
+  "author": "2FAC",
   "license": "MIT",
   "scripts": {
     "dev": "concurrently \"npm run dev:main\" \"npm run dev:renderer\"",
@@ -17,8 +17,9 @@
     "start": "electron .",
     "test": "jest",
     "electron:dev": "concurrently \"npm run build:main\" \"npm run dev:renderer\" \"wait-on http://localhost:3000 && electron . --serve\"",
-    "electron:build": "npm run build && electron-builder",
-    "lint": "eslint ."
+    "electron:build": "npm run build && electron-builder --publish never",
+    "lint": "eslint .",
+    "test:scripts": "node --test scripts/*.test.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -67,6 +68,7 @@
     "argon2": "^0.45.1",
     "crypto-js": "^4.2.0",
     "electron-store": "^11.0.2",
+    "electron-updater": "^6.8.9",
     "jsqr": "^1.4.0",
     "otpauth": "^9.5.2",
     "protobufjs": "^8.8.0",
@@ -74,5 +76,11 @@
     "react-dom": "^19.3.0",
     "speakeasy": "^2.0.0"
   },
-  "packageManager": "pnpm@10.28.2+sha512.41872f037ad22f7348e3b1debbaf7e867cfd448f2726d9cf74c08f19507c31d2c8e7a11525b983febc2df640b5438dee6023ebb1f84ed43cc2d654d2bc326264"
+  "packageManager": "pnpm@10.28.2+sha512.41872f037ad22f7348e3b1debbaf7e867cfd448f2726d9cf74c08f19507c31d2c8e7a11525b983febc2df640b5438dee6023ebb1f84ed43cc2d654d2bc326264",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "electron",
+      "esbuild"
+    ]
+  }
 }

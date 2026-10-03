@@ -29,6 +29,7 @@ import {
     importEncrypted,
     importPlain,
 } from './importers';
+import { initAutoUpdater } from './updater';
 import { TwoFAItem, AppSettings } from './types';
 
 const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
@@ -171,6 +172,7 @@ if (!gotTheLock) {
 
         createWindow();
         createTray();
+        initAutoUpdater(() => mainWindow);
 
         if (process.defaultApp) {
             if (process.argv.length >= 2) {

@@ -36,7 +36,7 @@ O **2FAC** é um gerenciador de autenticação de dois fatores (2FA) desktop de 
 
 ### Pré-requisitos
 
-*   Node.js (v18+)
+*   Node.js (v22+)
 *   pnpm (recomendado) ou npm
 
 ### Instalação & Desenvolvimento
@@ -58,6 +58,10 @@ pnpm run electron:dev
 # Gere o instalador para sua plataforma
 pnpm run electron:build
 ```
+
+### Releases e atualização automática
+
+Tags `vX.Y.Z` disparam o build dos instaladores e o Release no GitLab; o app se atualiza sozinho. Detalhes em [`docs/RELEASE.md`](docs/RELEASE.md).
 
 ---
 

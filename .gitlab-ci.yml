@@ -1,0 +1,90 @@
+# Pipeline do 2FAC: testes em MR/branch padrão e, ao criar uma tag vX.Y.Z, build dos instaladores
+# + Release no GitLab. O app consulta `$CI_PROJECT_URL/-/releases/permalink/latest/downloads`
+# (feed embutido no build) para o auto-update. Ver docs/RELEASE.md.
+
+stages: [test, build, release]
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/
+
+variables:
+  PNPM_HOME: $CI_PROJECT_DIR/.pnpm-home
+  UPDATE_FEED_URL: $CI_PROJECT_URL/-/releases/permalink/latest/downloads
+
+.pnpm:
+  cache:
+    key:
+      files: [pnpm-lock.yaml]
+    paths: [.pnpm-store]
+  before_script:
+    - node -e "if (+process.versions.node.split('.')[0] < 22) { console.error('Node >= 22 é necessário, encontrado ' + process.version); process.exit(1); }"
+    - corepack enable
+    - pnpm config set store-dir .pnpm-store
+    - pnpm install --frozen-lockfile
+
+test:
+  stage: test
+  image: node:22
+  extends: .pnpm
+  script:
+    - pnpm exec tsc --noEmit
+    - pnpm run lint
+    - pnpm exec jest --ci
+    - pnpm run test:scripts
+  coverage: '/All files\s*\|\s*([\d.]+)/'
+
+# Linux (AppImage + deb) e Windows (NSIS + portable, via wine) na imagem oficial do electron-builder.
+build:linux-windows:
+  stage: build
+  image: electronuserland/builder:wine
+  extends: .pnpm
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    - npm pkg set version="${CI_COMMIT_TAG#v}"   # a versão do app vem da tag
+    - pnpm run build
+    - >
+      pnpm exec electron-builder --linux AppImage deb --win nsis portable --publish never
+      -c.publish.provider=generic -c.publish.url="$UPDATE_FEED_URL"
+  artifacts:
+    paths: [release/]
+    expire_in: 1 week
+
+# macOS exige runner macOS e, para o auto-update funcionar, app assinado/notarizado.
+# Ative definindo BUILD_MACOS=true nas variáveis de CI (e CSC_LINK/CSC_KEY_PASSWORD/APPLE_* para assinar).
+build:macos:
+  stage: build
+  image: macos-14-xcode-15
+  tags: [saas-macos-medium-m1]
+  rules:
+    - if: $CI_COMMIT_TAG && $BUILD_MACOS == "true"
+  before_script:
+    - brew install node@22 pnpm
+    - export PATH="$(brew --prefix node@22)/bin:$PATH"
+    - pnpm install --frozen-lockfile
+  script:
+    - npm pkg set version="${CI_COMMIT_TAG#v}"
+    - pnpm run build
+    - >
+      pnpm exec electron-builder --mac dmg zip --publish never
+      -c.publish.provider=generic -c.publish.url="$UPDATE_FEED_URL"
+  artifacts:
+    paths: [release/]
+    expire_in: 1 week
+
+release:
+  stage: release
+  image: node:22
+  rules:
+    - if: $CI_COMMIT_TAG
+  needs:
+    - job: build:linux-windows
+      artifacts: true
+    - job: build:macos
+      artifacts: true
+      optional: true
+  script:
+    - node scripts/gitlab-release.mjs

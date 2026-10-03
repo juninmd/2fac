@@ -1,13 +1,24 @@
 {
   "appId": "com.2fac.app",
   "productName": "2FAC",
+  "artifactName": "${name}-${version}-${os}-${arch}.${ext}",
   "files": [
     "dist/**/*",
-    "node_modules/**/*"
+    "public/icon.png",
+    "package.json"
   ],
   "directories": {
-    "buildResources": "assets"
+    "buildResources": "public",
+    "output": "release"
   },
+  "protocols": [
+    {
+      "name": "otpauth",
+      "schemes": [
+        "otpauth"
+      ]
+    }
+  ],
   "win": {
     "target": [
       "nsis",
@@ -16,6 +27,29 @@
   },
   "nsis": {
     "oneClick": false,
-    "allowToChangeInstallationDirectory": true
-  }
+    "allowToChangeInstallationDirectory": true,
+    "artifactName": "${name}-${version}-${os}-${arch}-setup.${ext}"
+  },
+  "portable": {
+    "artifactName": "${name}-${version}-${os}-${arch}-portable.${ext}"
+  },
+  "mac": {
+    "target": [
+      "dmg",
+      "zip"
+    ],
+    "category": "public.app-category.utilities"
+  },
+  "linux": {
+    "target": [
+      "AppImage",
+      "deb"
+    ],
+    "category": "Utility",
+    "maintainer": "2FAC <noreply@example.com>"
+  },
+  "npmRebuild": false,
+  "asarUnpack": [
+    "**/node_modules/argon2/**/*.node"
+  ]
 }

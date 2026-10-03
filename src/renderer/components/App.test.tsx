@@ -129,6 +129,9 @@ beforeAll(() => {
     importAuthy: mockImportAuthy,
     importGoogleAuth: mockImportGoogleAuth,
     onProtocolUrl: mockOnProtocolUrl,
+    getAppVersion: jest.fn().mockResolvedValue('1.0.0'),
+    getUpdateStatus: jest.fn().mockResolvedValue({ state: 'idle' }),
+    onUpdateStatus: jest.fn(() => jest.fn()),
   };
 });
 

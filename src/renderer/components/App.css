@@ -901,3 +901,19 @@ body {
     display: flex;
     justify-content: flex-end;
 }
+/* Banner de atualização */
+.update-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 8px 16px;
+    font-size: 13px;
+    background-color: var(--bg-surface);
+    border-bottom: 1px solid var(--primary-color);
+}
+
+.update-banner .btn {
+    padding: 4px 12px;
+    font-size: 12px;
+}

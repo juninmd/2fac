@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AppSettings } from '../types';
+import UpdateSection from './UpdateSection';
 
 interface SettingsProps {
     onClose: () => void;
@@ -401,6 +402,8 @@ const Settings: React.FC<SettingsProps> = ({
                             <li>Sem rastreamento ou nuvem</li>
                             <li>Código Aberto</li>
                         </ul>
+
+                        <UpdateSection />
 
                         <h4 style={{ marginTop: '20px' }}>Atalhos de Teclado</h4>
                         <ul style={{ paddingLeft: '20px', color: 'var(--text-secondary)' }}>

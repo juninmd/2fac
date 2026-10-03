@@ -8,6 +8,7 @@ import LockScreen from './LockScreen';
 import Settings from './Settings';
 import SidebarList from './SidebarList';
 import TokenDetail from './TokenDetail';
+import UpdateBanner from './UpdateBanner';
 import './App.css';
 
 const App: React.FC = () => {
@@ -430,6 +431,8 @@ const App: React.FC = () => {
                     </button>
                 </div>
             </header>
+
+            <UpdateBanner />
 
             <div className="app-content">
                 {!isWindowFocused && settings?.blurOnInactive && !isLocked && (
