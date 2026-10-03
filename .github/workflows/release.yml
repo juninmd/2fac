@@ -66,14 +66,21 @@ jobs:
       - run: pnpm exec jest --ci
       - run: pnpm run build
       - name: Empacotar e anexar ao release
-        run: pnpm exec electron-builder --publish always
+        shell: bash
+        run: |
+          # Segredos ausentes chegam como string vazia, e o electron-builder trata "" como definido
+          # (CSC_LINK="" vira o diretório atual e falha com "not a file"). Remove os vazios.
+          for v in CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID; do
+            [ -n "${!v}" ] || unset "$v"
+          done
+          [ -n "$CSC_LINK" ] || export CSC_IDENTITY_AUTO_DISCOVERY=false # sem certificado: não assina
+          pnpm exec electron-builder --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Assinatura (opcional). Sem estes segredos o app sai sem assinatura.
           # No macOS o auto-update só funciona com app assinado e notarizado.
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-          CSC_IDENTITY_AUTO_DISCOVERY: ${{ secrets.CSC_LINK != '' }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
