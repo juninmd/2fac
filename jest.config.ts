@@ -12,7 +12,8 @@ export default {
      }],
    },
    testMatch: [
-     '**/src/renderer/**/*.test.{ts,tsx}'
+     '**/src/renderer/**/*.test.{ts,tsx}',
+     '**/src/main/**/*.test.ts'
    ],
    collectCoverage: true,
    collectCoverageFrom: [
