@@ -61,7 +61,7 @@ pnpm run electron:build
 
 ### Releases e atualização automática
 
-Tags `vX.Y.Z` disparam o build dos instaladores e o GitHub Release; o app se atualiza sozinho. Detalhes em [`docs/RELEASE.md`](docs/RELEASE.md).
+Cada commit no `main` gera tag, build dos instaladores e GitHub Release automaticamente (versão por Conventional Commits); o app se atualiza sozinho. Detalhes em [`docs/RELEASE.md`](docs/RELEASE.md).
 
 ---
 

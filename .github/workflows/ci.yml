@@ -26,4 +26,5 @@ jobs:
       - run: pnpm exec tsc --noEmit
       - run: pnpm run lint
       - run: pnpm exec jest --ci
+      - run: pnpm run test:scripts
       - run: pnpm run build
