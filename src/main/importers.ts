@@ -1,10 +1,13 @@
-import * as crypto from 'crypto';
 import * as OTPAuth from 'otpauth';
 import * as protobuf from 'protobufjs';
 import { readFile } from 'fs/promises';
 import Store from 'electron-store';
 import { TwoFAItem, ImportResult, AlgorithmMap } from './types';
+import { createTwoFAItem, encodeBase32, getErrorMessage, normalizeSecret } from './importUtils';
 import { getExistingSecrets, appendItems, generateItemId } from './store';
+
+const existingNormalizedSecrets = (store: Store): Set<string> =>
+    new Set([...getExistingSecrets(store)].map(secret => (typeof secret === 'string' ? normalizeSecret(secret) : '')));
 import { decryptData, validateEncryptedBackup } from './crypto';
 
 const ALGORITHM_MAP: AlgorithmMap = { 1: 'SHA1', 2: 'SHA256', 3: 'SHA512' };
@@ -61,80 +64,50 @@ interface MigrationPayloadProto {
 const root = protobuf.parse(GOOGLE_AUTH_PROTO).root;
 const MigrationPayload = root.lookupType('MigrationPayload');
 
-const encodeBase32 = (buffer: Uint8Array): string => {
-    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-    let bits = 0;
-    let value = 0;
-    let output = '';
+const MIGRATION_PREFIX = 'otpauth-migration://offline?data=';
 
-    for (let i = 0; i < buffer.length; i++) {
-        value = (value << 8) | buffer[i];
-        bits += 8;
-        while (bits >= 5) {
-            output += alphabet[(value >>> (bits - 5)) & 31];
-            bits -= 5;
-        }
-    }
-    if (bits > 0) {
-        output += alphabet[(value << (5 - bits)) & 31];
-    }
-    return output;
+/** Google costuma exportar "Emissor:conta" no campo name; separa quando faz sentido. */
+const splitGoogleName = (name: string, issuer: string): { account: string; issuer: string } => {
+    const separator = name.indexOf(':');
+    if (separator < 0) return { account: name, issuer };
+    const prefix = name.slice(0, separator).trim();
+    const account = name.slice(separator + 1).trim();
+    if (!issuer) return { account, issuer: prefix };
+    return { account: prefix === issuer ? account : name, issuer };
 };
-
-const createTwoFAItem = (
-    data: Partial<TwoFAItem>,
-    existingSecrets: Set<string>
-): TwoFAItem | null => {
-    const secret = data.secret?.replace(/\s+/g, '').toUpperCase();
-    if (!secret || existingSecrets.has(secret)) return null;
-
-    const item: TwoFAItem = {
-        id: generateItemId(),
-        account: data.account || 'Conta Importada',
-        issuer: data.issuer || 'Importado',
-        secret,
-        algorithm: data.algorithm || 'SHA1',
-        digits: data.digits || 6,
-        period: data.period || 30,
-        type: data.type || 'totp',
-    };
-
-    existingSecrets.add(secret);
-    return item;
-};
-
-const getErrorMessage = (error: unknown): string =>
-    error instanceof Error ? error.message : String(error);
 
 export const importGoogleAuth = async (filePath: string, store: Store): Promise<ImportResult> => {
     try {
-        const fileContent = (await readFile(filePath, 'utf-8')).trim();
+        const links = (await readFile(filePath, 'utf-8'))
+            .split(/\r?\n/)
+            .map(line => line.trim())
+            .filter(line => line.startsWith(MIGRATION_PREFIX));
 
-        if (!fileContent.startsWith('otpauth-migration://offline?data=')) {
+        if (links.length === 0) {
             return { success: false, error: 'O arquivo não contém um link válido do otpauth-migration' };
         }
 
-        const dataPart = fileContent.replace('otpauth-migration://offline?data=', '');
-        const decodedData = Buffer.from(decodeURIComponent(dataPart), 'base64');
-        const message = MigrationPayload.decode(decodedData) as MigrationPayloadProto;
+        const params = links.flatMap(link => {
+            const decodedData = Buffer.from(decodeURIComponent(link.slice(MIGRATION_PREFIX.length)), 'base64');
+            return (MigrationPayload.decode(decodedData) as MigrationPayloadProto).otpParameters ?? [];
+        });
 
-        if (!message.otpParameters?.length) {
+        if (params.length === 0) {
             return { success: false, error: 'Nenhum token encontrado' };
         }
 
         const newItems: TwoFAItem[] = [];
-        const existingSecrets = getExistingSecrets(store);
+        const existingSecrets = existingNormalizedSecrets(store);
 
-        for (const otp of message.otpParameters) {
-            const secretBase32 = encodeBase32(otp.secret);
+        for (const otp of params) {
+            const { account, issuer } = splitGoogleName(otp.name || '', otp.issuer || '');
             const item = createTwoFAItem(
                 {
-                    account: otp.name || 'Conta Google Auth',
-                    issuer: otp.issuer || 'Google Authenticator',
-                    secret: secretBase32,
-                    algorithm: ALGORITHM_MAP[otp.algorithm ?? 0] || 'SHA1',
+                    account: account || 'Conta Google Auth',
+                    issuer: issuer || 'Google Authenticator',
+                    secret: encodeBase32(otp.secret),
+                    algorithm: ALGORITHM_MAP[otp.algorithm ?? 0],
                     digits: otp.digits === 2 ? 8 : 6,
-                    period: 30,
                     type: otp.type === 1 ? 'hotp' : 'totp',
                 },
                 existingSecrets
@@ -156,23 +129,35 @@ export const importGoogleAuth = async (filePath: string, store: Store): Promise<
     }
 };
 
+const BARE_SECRET_MIN_LENGTH = 16;
+
+const extractEntries = (data: unknown): unknown[] => {
+    if (Array.isArray(data)) return data;
+    if (!data || typeof data !== 'object') return [];
+    const record = data as Record<string, unknown>;
+    for (const key of ['entries', 'tokens', 'items']) {
+        if (Array.isArray(record[key])) return record[key] as unknown[];
+    }
+    return [record];
+};
+
 export const importAuthy = async (filePath: string, store: Store): Promise<ImportResult> => {
     try {
         const fileContent = await readFile(filePath, 'utf-8');
-        const existingSecrets = getExistingSecrets(store);
+        const existingSecrets = existingNormalizedSecrets(store);
         const newItems: TwoFAItem[] = [];
 
-        const addItem = (entry: Record<string, unknown>): void => {
-            if (!entry || typeof entry !== 'object') return;
+        const addItem = (entry: Record<string, unknown>, minSecretLength?: number): void => {
             const item = createTwoFAItem(
                 {
                     account: (entry.name || entry.account || entry.label) as string | undefined,
                     issuer: (entry.issuer || entry.provider) as string | undefined,
                     secret: (entry.secret || entry.decrypted_seed || entry.seed) as string | undefined,
-                    algorithm: entry.algorithm as string | undefined,
-                    digits: entry.digits as number | undefined,
-                    period: entry.period as number | undefined,
+                    algorithm: entry.algorithm,
+                    digits: entry.digits,
+                    period: entry.period,
                     type: entry.type as string | undefined,
+                    minSecretLength,
                 },
                 existingSecrets
             );
@@ -182,50 +167,36 @@ export const importAuthy = async (filePath: string, store: Store): Promise<Impor
             }
         };
 
+        let isJson = true;
         try {
-            const data = JSON.parse(fileContent);
-            let entries: Record<string, unknown>[] = [];
-
-            if (Array.isArray(data)) {
-                entries = data;
-            } else if (data.entries && Array.isArray(data.entries)) {
-                entries = data.entries;
-            } else if (data.tokens && Array.isArray(data.tokens)) {
-                entries = data.tokens;
-            } else if (data.items && Array.isArray(data.items)) {
-                entries = data.items;
-            } else {
-                entries = [data];
-            }
-
-            entries.forEach(addItem);
+            extractEntries(JSON.parse(fileContent)).forEach(entry => {
+                if (entry && typeof entry === 'object') addItem(entry as Record<string, unknown>);
+            });
         } catch {
-            // Not valid JSON, proceed to URI parsing
+            isJson = false;
         }
 
-        if (newItems.length === 0) {
-            const lines = fileContent.split(/\r?\n/);
-            for (const line of lines) {
+        // Só interpreta como lista de URIs/segredos se o arquivo não for JSON
+        if (!isJson) {
+            for (const line of fileContent.split(/\r?\n/)) {
                 const trimmed = line.trim();
                 if (trimmed.startsWith('otpauth://')) {
                     try {
                         const parsed = OTPAuth.URI.parse(trimmed);
-                        if (parsed) {
-                            addItem({
-                                account: parsed.label as unknown as string,
-                                issuer: parsed.issuer,
-                                secret: parsed.secret?.base32,
-                                algorithm: parsed.algorithm,
-                                digits: parsed.digits,
-                                period: parsed instanceof OTPAuth.TOTP ? parsed.period : 30,
-                                type: 'totp',
-                            });
-                        }
+                        addItem({
+                            account: parsed.label,
+                            issuer: parsed.issuer,
+                            secret: parsed.secret.base32,
+                            algorithm: parsed.algorithm,
+                            digits: parsed.digits,
+                            period: parsed instanceof OTPAuth.TOTP ? parsed.period : undefined,
+                            type: parsed instanceof OTPAuth.HOTP ? 'hotp' : 'totp',
+                        });
                     } catch {
-                        console.error('Falha ao processar URI:', trimmed);
+                        console.error('Falha ao processar URI otpauth');
                     }
-                } else if (trimmed.length > 10 && !trimmed.includes(' ')) {
-                    addItem({ secret: trimmed });
+                } else if (trimmed && !trimmed.startsWith('#')) {
+                    addItem({ secret: trimmed }, BARE_SECRET_MIN_LENGTH);
                 }
             }
         }
@@ -239,6 +210,28 @@ export const importAuthy = async (filePath: string, store: Store): Promise<Impor
         console.error('Erro na importação Authy:', error);
         return { success: false, error: getErrorMessage(error) };
     }
+};
+
+/** Importa itens de um backup do próprio 2FAC: valida, gera novos ids e ignora segredos já existentes. */
+const importOwnBackup = (data: unknown, store: Store): ImportResult => {
+    if (!Array.isArray(data)) {
+        return { success: false, error: 'Formato inválido: esperado uma lista de contas' };
+    }
+
+    const seen = new Set<string>([...getExistingSecrets(store)]);
+    const newItems: TwoFAItem[] = [];
+
+    for (const entry of data as Partial<TwoFAItem>[]) {
+        const secret = typeof entry?.secret === 'string' ? entry.secret.trim() : '';
+        if (!secret || seen.has(secret)) continue;
+        seen.add(secret);
+        newItems.push({ ...entry, secret, id: generateItemId() } as TwoFAItem);
+    }
+
+    if (newItems.length > 0) {
+        appendItems(store, newItems);
+    }
+    return { success: newItems.length > 0, count: newItems.length };
 };
 
 export const importEncrypted = async (
@@ -260,41 +253,24 @@ export const importEncrypted = async (
             return { success: false, error: 'Invalid backup file structure' };
         }
 
-        const decrypted = await decryptData(backupData, password);
-        const importedItems: TwoFAItem[] = JSON.parse(decrypted);
-
-        const itemsWithNewIds = importedItems.map(item => ({
-            ...item,
-            id: generateItemId(),
-        }));
-
-        appendItems(store, itemsWithNewIds);
-        return { success: true, count: itemsWithNewIds.length };
-    } catch (error) {
-        console.error('Import decryption error:', error);
-        const message = getErrorMessage(error);
-        if (message.includes('auth tag')) {
+        let decrypted: string;
+        try {
+            decrypted = await decryptData(backupData, password);
+        } catch {
+            // AES-GCM falha na verificação da tag tanto com senha errada quanto com arquivo adulterado
             return { success: false, error: 'Senha incorreta ou arquivo corrompido' };
         }
-        return { success: false, error: message };
+
+        return importOwnBackup(JSON.parse(decrypted), store);
+    } catch (error) {
+        console.error('Import decryption error:', error);
+        return { success: false, error: getErrorMessage(error) };
     }
 };
 
-export const importPlain = async (
-    filePath: string,
-    store: Store
-): Promise<ImportResult> => {
+export const importPlain = async (filePath: string, store: Store): Promise<ImportResult> => {
     try {
-        const fileContent = await readFile(filePath, 'utf-8');
-        const importedItems: TwoFAItem[] = JSON.parse(fileContent);
-
-        const itemsWithNewIds = importedItems.map(item => ({
-            ...item,
-            id: generateItemId(),
-        }));
-
-        appendItems(store, itemsWithNewIds);
-        return { success: true, count: itemsWithNewIds.length };
+        return importOwnBackup(JSON.parse(await readFile(filePath, 'utf-8')), store);
     } catch (error) {
         return { success: false, error: getErrorMessage(error) };
     }

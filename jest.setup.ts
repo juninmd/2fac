@@ -2,7 +2,8 @@ import '@testing-library/jest-dom';
 import type { TwoFAItem, AppSettings } from './src/renderer/types';
 
 // Mock window.electron — mirrors the API exposed by preload/preload.ts
-Object.defineProperty(window, 'electron', {
+// (ignorado nos testes do processo main, que rodam em ambiente node)
+if (typeof window !== 'undefined') Object.defineProperty(window, 'electron', {
   value: {
     get2FAItems: jest.fn<Promise<TwoFAItem[]>, []>(),
     add2FAItem: jest.fn<Promise<TwoFAItem>, [Omit<TwoFAItem, 'id'>]>(),
@@ -27,7 +28,7 @@ Object.defineProperty(window, 'electron', {
 });
 
 // Mock ResizeObserver
-global.ResizeObserver = class ResizeObserver {
+if (typeof window !== 'undefined') global.ResizeObserver = class ResizeObserver {
   observe() {}
   unobserve() {}
   disconnect() {}
