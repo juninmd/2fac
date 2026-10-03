@@ -61,7 +61,7 @@ pnpm run electron:build
 
 ### Releases e atualização automática
 
-Tags `vX.Y.Z` disparam o build dos instaladores e o Release no GitLab; o app se atualiza sozinho. Detalhes em [`docs/RELEASE.md`](docs/RELEASE.md).
+Tags `vX.Y.Z` disparam o build dos instaladores e o GitHub Release; o app se atualiza sozinho. Detalhes em [`docs/RELEASE.md`](docs/RELEASE.md).
 
 ---
 

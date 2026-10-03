@@ -51,5 +51,12 @@
   "npmRebuild": false,
   "asarUnpack": [
     "**/node_modules/argon2/**/*.node"
+  ],
+  "publish": [
+    {
+      "provider": "github",
+      "owner": "juninmd",
+      "repo": "2fac"
+    }
   ]
 }
