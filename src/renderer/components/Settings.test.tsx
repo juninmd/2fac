@@ -14,6 +14,9 @@ beforeAll(() => {
     getSettings: mockGetSettings,
     checkMasterPassword: mockCheckMasterPassword,
     setMasterPassword: mockSetMasterPassword,
+    getAppVersion: jest.fn().mockResolvedValue('1.0.0'),
+    getUpdateStatus: jest.fn().mockResolvedValue({ state: 'idle' }),
+    onUpdateStatus: jest.fn(() => jest.fn()),
   };
 });
 

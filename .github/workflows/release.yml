@@ -1,0 +1,94 @@
+name: Release
+
+# A cada commit no main: calcula a versão (Conventional Commits), cria a tag vX.Y.Z e um release
+# em rascunho, builda os instaladores em cada SO, anexa-os e publica o release com notas geradas.
+# O app se atualiza a partir dele (electron-updater, provider github). Veja docs/RELEASE.md.
+# Para não gerar release num commit, inclua [skip release] na mensagem.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Um release por vez; commits seguidos entram na fila em vez de cancelar o build em andamento.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.next.outputs.release }}
+      tag: ${{ steps.next.outputs.tag }}
+      version: ${{ steps.next.outputs.version }}
+      previousTag: ${{ steps.next.outputs.previousTag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # histórico e tags completos para calcular a versão
+      - id: next
+        run: node scripts/next-version.mjs
+      - name: Criar tag e release em rascunho
+        if: steps.next.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.next.outputs.tag }}
+        run: |
+          git tag "$TAG" "$GITHUB_SHA"
+          git push origin "refs/tags/$TAG"
+          gh release create "$TAG" --draft --verify-tag --title "$TAG" --notes ""
+
+  build:
+    needs: version
+    if: needs.version.outputs.release == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version.outputs.tag }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Versão do app = tag
+        shell: bash
+        run: npm pkg set version="${{ needs.version.outputs.version }}"
+      - run: pnpm exec tsc --noEmit
+      - run: pnpm exec jest --ci
+      - run: pnpm run build
+      - name: Empacotar e anexar ao release
+        run: pnpm exec electron-builder --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Assinatura (opcional). Sem estes segredos o app sai sem assinatura.
+          # No macOS o auto-update só funciona com app assinado e notarizado.
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          CSC_IDENTITY_AUTO_DISCOVERY: ${{ secrets.CSC_LINK != '' }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+  publish:
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publicar o release com notas geradas
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.version.outputs.tag }}
+          PREVIOUS_TAG: ${{ needs.version.outputs.previousTag }}
+        run: |
+          args=(-f tag_name="$TAG")
+          [ -n "$PREVIOUS_TAG" ] && args+=(-f previous_tag_name="$PREVIOUS_TAG")
+          gh api -X POST "repos/$GITHUB_REPOSITORY/releases/generate-notes" "${args[@]}" --jq .body > notes.md
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest --notes-file notes.md

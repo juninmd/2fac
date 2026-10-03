@@ -13,6 +13,16 @@ export interface TwoFAItem {
     category?: string;
 }
 
+export type UpdateStatus =
+    | { state: 'idle' }
+    | { state: 'unsupported'; reason: string }
+    | { state: 'checking' }
+    | { state: 'not-available' }
+    | { state: 'available'; version: string }
+    | { state: 'downloading'; version: string; percent: number }
+    | { state: 'downloaded'; version: string }
+    | { state: 'error'; message: string };
+
 export interface ElectronAPI {
     get2FAItems: () => Promise<TwoFAItem[]>;
     add2FAItem: (item: Omit<TwoFAItem, 'id'>) => Promise<TwoFAItem>;
@@ -32,6 +42,11 @@ export interface ElectronAPI {
     set2FAItems: (items: TwoFAItem[]) => Promise<boolean>;
     getSettings: () => Promise<AppSettings>;
     setSettings: (settings: AppSettings) => Promise<boolean>;
+    getAppVersion: () => Promise<string>;
+    getUpdateStatus: () => Promise<UpdateStatus>;
+    checkForUpdates: () => Promise<UpdateStatus>;
+    installUpdate: () => Promise<boolean>;
+    onUpdateStatus: (callback: (status: UpdateStatus) => void) => () => void;
     onProtocolUrl: (callback: (url: string) => void) => () => void;
 }
 

@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import type { TwoFAItem, AppSettings } from './src/renderer/types';
+import type { TwoFAItem, AppSettings, UpdateStatus } from './src/renderer/types';
 
 // Mock window.electron — mirrors the API exposed by preload/preload.ts
 // (ignorado nos testes do processo main, que rodam em ambiente node)
@@ -22,6 +22,11 @@ if (typeof window !== 'undefined') Object.defineProperty(window, 'electron', {
     hasMasterPassword: jest.fn<Promise<boolean>, []>(),
     getSettings: jest.fn<Promise<AppSettings>, []>(),
     setSettings: jest.fn<Promise<boolean>, [AppSettings]>(),
+    getAppVersion: jest.fn<Promise<string>, []>(),
+    getUpdateStatus: jest.fn<Promise<UpdateStatus>, []>(),
+    checkForUpdates: jest.fn<Promise<UpdateStatus>, []>(),
+    installUpdate: jest.fn<Promise<boolean>, []>(),
+    onUpdateStatus: jest.fn<() => void, [(status: UpdateStatus) => void]>(),
     onProtocolUrl: jest.fn<() => void, [(url: string) => void]>(),
   },
   writable: true,

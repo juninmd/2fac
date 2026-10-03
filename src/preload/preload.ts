@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { TwoFAItem, AppSettings } from '../main/types';
+import { TwoFAItem, AppSettings, UpdateStatus } from '../main/types';
 
 contextBridge.exposeInMainWorld('electron', {
     get2FAItems: () => ipcRenderer.invoke('get-2fa-items'),
@@ -20,6 +20,15 @@ contextBridge.exposeInMainWorld('electron', {
     set2FAItems: (items: TwoFAItem[]) => ipcRenderer.invoke('set-2fa-items', items),
     getSettings: () => ipcRenderer.invoke('get-settings'),
     setSettings: (settings: AppSettings) => ipcRenderer.invoke('set-settings', settings),
+    getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+    getUpdateStatus: () => ipcRenderer.invoke('get-update-status'),
+    checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+    installUpdate: () => ipcRenderer.invoke('install-update'),
+    onUpdateStatus: (callback: (status: UpdateStatus) => void) => {
+        const subscription = (_event: Electron.IpcRendererEvent, status: UpdateStatus) => callback(status);
+        ipcRenderer.on('on-update-status', subscription);
+        return () => ipcRenderer.removeListener('on-update-status', subscription);
+    },
     onProtocolUrl: (callback: (url: string) => void) => {
         const subscription = (_event: Electron.IpcRendererEvent, url: string) => callback(url);
         ipcRenderer.on('on-protocol-url', subscription);
