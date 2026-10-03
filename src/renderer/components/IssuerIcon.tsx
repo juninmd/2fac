@@ -1,7 +1,7 @@
 import React from 'react';
 import { getBrandKey } from '../utils/brandUtils';
 
-const ICONS: Record<string, JSX.Element> = {
+const ICONS: Record<string, React.JSX.Element> = {
     // Google (G)
     'google': <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 0.507 5.387 0.507 12s5.36 12 11.973 12c3.507 0 6.187-1.16 8.267-3.32 2.133-2.133 2.8-5.133 2.8-7.56 0-.76-.067-1.467-.187-2.2h-10.88z"/>,
 

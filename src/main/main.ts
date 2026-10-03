@@ -40,6 +40,7 @@ const writeFileAsync = async (filePath: string, data: string): Promise<void> => 
 const getErrorMessage = (error: unknown): string =>
     error instanceof Error ? error.message : String(error);
 
+const START_HIDDEN_ARG = '--hidden';
 const isDev = process.env.NODE_ENV === 'development';
 app.disableHardwareAcceleration();
 
@@ -94,12 +95,13 @@ const createTray = (): void => {
 
 const createWindow = (): void => {
     mainWindow = new BrowserWindow({
+        show: !process.argv.includes(START_HIDDEN_ARG),
         width: 900,
         height: 700,
         minWidth: 600,
         minHeight: 400,
         webPreferences: {
-            preload: path.join(__dirname, '../preload/preload.js'),
+            preload: path.join(__dirname, '../preload/preload.cjs'),
             contextIsolation: true,
             nodeIntegration: false,
             sandbox: true,
@@ -181,7 +183,7 @@ if (!gotTheLock) {
         const settings = getAppSettings(store);
         app.setLoginItemSettings({
             openAtLogin: !!settings.runOnStartup,
-            openAsHidden: !!settings.minimizeToTray,
+            args: settings.minimizeToTray ? [START_HIDDEN_ARG] : [],
         });
     });
 }
@@ -402,7 +404,7 @@ ipcMain.handle('set-settings', (_event, settings: AppSettings) => {
     setAppSettings(store, settings);
     app.setLoginItemSettings({
         openAtLogin: !!settings.runOnStartup,
-        openAsHidden: !!settings.minimizeToTray,
+        args: settings.minimizeToTray ? [START_HIDDEN_ARG] : [],
     });
     return true;
 });
