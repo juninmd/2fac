@@ -17,10 +17,20 @@ export const getArgonKey = async (password: string, salt: Buffer): Promise<Buffe
     return hash;
 };
 
-export const hashPassword = async (password: string, salt: string): Promise<string> => {
+import * as bcrypt from 'bcrypt';
+
+export const legacyHashPassword = async (password: string, salt: string): Promise<string> => {
     const saltBuffer = Buffer.from(salt, 'hex');
     const key = await getArgonKey(password, saltBuffer);
     return crypto.createHash('sha256').update(key).digest('hex');
+};
+
+export const hashPassword = async (password: string, _salt: string): Promise<string> => {
+    return bcrypt.hash(password, 12);
+};
+
+export const verifyPassword = async (password: string, hash: string): Promise<boolean> => {
+    return bcrypt.compare(password, hash);
 };
 
 export const encryptDataWithKey = (data: string, key: Buffer): EncryptedBackup => {
