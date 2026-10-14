@@ -32,6 +32,10 @@ if (typeof window !== 'undefined') Object.defineProperty(window, 'electron', {
   writable: true,
 });
 
+// Mock React.act for React 19 compatibility
+const mockAct = jest.fn(() => undefined);
+(global as any).React = { act: mockAct };
+
 // Mock ResizeObserver
 if (typeof window !== 'undefined') global.ResizeObserver = class ResizeObserver {
   observe() {}
