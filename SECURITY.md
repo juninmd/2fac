@@ -22,7 +22,7 @@ We will acknowledge receipt within 48 hours and provide a timeline for resolutio
 
 ### Data Protection
 - **AES-256-GCM Encryption**: All exported backups are encrypted using AES-256-GCM
-- **PBKDF2 Key Derivation**: Passwords are derived using PBKDF2 with 100,000 iterations
+- **Argon2id Key Derivation**: Keys are derived from the master password with Argon2id (`argon2` package) and a random salt
 - **Secure Random Generation**: Salt and IV are generated using cryptographically secure random bytes
 - **Master Password Protection**: Application requires authentication before access
 
@@ -40,10 +40,7 @@ We will acknowledge receipt within 48 hours and provide a timeline for resolutio
 ## Known Security Considerations
 
 ### Password Hashing
-The current implementation uses SHA-256 for master password hashing. For enhanced security, consider upgrading to:
-- bcrypt
-- scrypt
-- Argon2
+The master password is run through Argon2id (see Data Protection); the derived key is stored as a SHA-256 digest for verification.
 
 ### Storage
 - Secrets are stored using electron-store (encrypted at rest on supported platforms)
