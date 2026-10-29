@@ -21,7 +21,7 @@ import {
     setSessionKey,
     getSessionKey,
 } from './store';
-import { hashPassword, encryptData, getArgonKey } from './crypto';
+import { hashPassword, encryptData, getArgonKey, verifyPassword, legacyHashPassword } from './crypto';
 import * as crypto from 'crypto';
 import {
     importGoogleAuth,
@@ -128,6 +128,15 @@ const createWindow = (): void => {
 
     mainWindow.setContentProtection(true);
 
+    mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+        callback({
+            responseHeaders: {
+                ...details.responseHeaders,
+                'Content-Security-Policy': ["default-src 'self' 'unsafe-inline' 'unsafe-eval' data:; script-src 'self' 'unsafe-eval' 'unsafe-inline'; connect-src 'self' https://api.github.com; img-src 'self' data:"]
+            }
+        });
+    });
+
     mainWindow.on('close', (event) => {
         const settings = getAppSettings(store);
         if (settings.minimizeToTray && !isQuitting) {
@@ -224,18 +233,24 @@ ipcMain.handle('get-2fa-items', () => {
 });
 
 ipcMain.handle('add-2fa-item', (_event, item: Omit<TwoFAItem, 'id'>) => {
+    if (!item || typeof item.secret !== 'string' || !item.secret) {
+        return null;
+    }
     return addTwoFAItem(store, item);
 });
 
 ipcMain.handle('remove-2fa-item', (_event, id: string) => {
+    if (typeof id !== 'string') return false;
     return removeTwoFAItem(store, id);
 });
 
 ipcMain.handle('update-2fa-item', (_event, id: string, updatedItem: Partial<TwoFAItem>) => {
+    if (typeof id !== 'string' || !updatedItem || typeof updatedItem !== 'object') return null;
     return updateTwoFAItem(store, id, updatedItem);
 });
 
 ipcMain.handle('set-2fa-items', (_event, items: TwoFAItem[]) => {
+    if (!Array.isArray(items)) return false;
     setTwoFAItems(store, items);
     return true;
 });
@@ -268,6 +283,9 @@ ipcMain.handle('export-2fa-encrypted', async (_event, password: string) => {
             return { success: true, path: result.filePath };
         } catch (error) {
             console.error('Export encryption error:', error);
+            if (process.env.NODE_ENV === 'production') {
+                return { success: false, error: 'Export failed' };
+            }
             return { success: false, error: getErrorMessage(error) };
         }
     }
@@ -374,19 +392,31 @@ ipcMain.handle('set-master-password', async (_event, password: string) => {
     return true;
 });
 
+let failedAttempts = 0;
+const MAX_ATTEMPTS = 5;
+
 ipcMain.handle('check-master-password', async (_event, password: string) => {
+    if (failedAttempts >= MAX_ATTEMPTS) {
+        return false;
+    }
     const savedData = store.get('masterPassword') as { hash: string; salt: string } | undefined;
     if (!savedData || !savedData.salt || !savedData.hash) return false;
-    const hash = await hashPassword(password, savedData.salt);
 
-    const isValid = savedData.hash === hash;
-    if (isValid) {
+    const isBcrypt = savedData.hash.startsWith('$2b$') || savedData.hash.startsWith('$2a$') || savedData.hash.startsWith('$2y$');
+    const valid = isBcrypt
+        ? await verifyPassword(password, savedData.hash)
+        : (await legacyHashPassword(password, savedData.salt)) === savedData.hash;
+
+    if (valid) {
+        failedAttempts = 0;
         const saltBuffer = Buffer.from(savedData.salt, 'hex');
         const key = await getArgonKey(password, saltBuffer);
         setSessionKey(key);
+    } else {
+        failedAttempts++;
     }
 
-    return isValid;
+    return valid;
 });
 
 ipcMain.handle('lock-app', () => {
