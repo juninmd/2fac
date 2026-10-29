@@ -1,0 +1,6 @@
+# Supressoes por fingerprint - triagem manual registrada no PR de seguranca.
+
+# Falso positivo: rotulo de UI em portugues ("Desbloquear") capturado
+# pela regra de senha hardcoded. Nenhuma credencial real.
+
+46af2c98d74841198f199b4d17f4a17efa2e7d9b:src/renderer/components/LockScreen.tsx:juninmd-hardcoded-password:82
