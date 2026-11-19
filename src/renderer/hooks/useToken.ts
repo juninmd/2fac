@@ -22,16 +22,14 @@ export const useToken = (item: TwoFAItem) => {
 
             switch (encoding) {
                 case 'base64':
-                    try {
+                    {
+                        // A malformed secret must surface as ERROR, never as a random valid-looking code.
                         const binary = atob(secret!);
                         const bytes = new Uint8Array(binary.length);
                         for (let i = 0; i < binary.length; i++) {
                             bytes[i] = binary.charCodeAt(i);
                         }
                         secretObj = new OTPAuth.Secret({ buffer: bytes.buffer });
-                    } catch (e) {
-                        console.error('Invalid Base64 secret', e);
-                        secretObj = new OTPAuth.Secret();
                     }
                     break;
                 case 'hex':
