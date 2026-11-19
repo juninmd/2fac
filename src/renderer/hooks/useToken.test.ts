@@ -94,24 +94,17 @@ describe('useToken', () => {
         expect(result.current.token).toBe('123 456');
     });
 
-    it('handles invalid base64 gracefully', () => {
-        // Mock invalid base64 (not divisible by 4 or invalid chars, though atob is lenient in some envs)
-        // But here we rely on atob throwing or returning something.
-        // Let's force atob to throw if possible, or just check that it doesn't crash app
-
-        // Mock atob to throw error for this test
+    it('shows ERROR for an invalid base64 secret instead of a random code', () => {
         const originalAtob = window.atob;
         window.atob = jest.fn().mockImplementation(() => { throw new Error('Invalid Base64'); });
-
-        const itemInvalid = { ...mockItem, encoding: 'base64', secret: 'INVALID!!!' };
-
         console.error = jest.fn(); // Suppress error log
 
+        const itemInvalid = { ...mockItem, encoding: 'base64', secret: 'INVALID!!!' };
         const { result } = renderHook(() => useToken(itemInvalid as unknown as TwoFAItem));
 
-        // Should fall back to empty Secret() call in catch block
-        expect(OTPAuth.Secret).toHaveBeenCalled();
-        expect(console.error).toHaveBeenCalledWith('Invalid Base64 secret', expect.any(Error));
+        // A bare `new Secret()` would be a random key and yield a plausible but wrong code.
+        expect(OTPAuth.TOTP).not.toHaveBeenCalled();
+        expect(result.current.token).toBe('ERROR');
 
         window.atob = originalAtob;
     });
