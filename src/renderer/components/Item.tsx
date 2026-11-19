@@ -32,9 +32,13 @@ const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, onMove, view
 
     const copyToClipboard = () => {
         const rawToken = token.replace(/\s/g, '');
-        navigator.clipboard.writeText(rawToken);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        navigator.clipboard.writeText(rawToken).then(
+            () => {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            },
+            () => console.error('Falha ao copiar o código para a área de transferência'),
+        );
     };
 
     const handleRemove = (e: React.MouseEvent) => {
@@ -105,13 +109,17 @@ const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, onMove, view
                         <label style={{fontSize: '0.8rem', color: '#aaa', marginBottom: '5px'}}>Cor</label>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: '3px' }}>
                             {COLORS.map(color => (
-                                <div
+                                <button
                                     key={color}
+                                    type="button"
+                                    aria-label={`Cor ${color}`}
+                                    aria-pressed={editForm.color === color}
                                     onClick={() => setEditForm(prev => ({ ...prev, color }))}
                                     style={{
                                         backgroundColor: color,
                                         width: '100%',
-                                        paddingTop: '100%',
+                                        aspectRatio: '1 / 1',
+                                        padding: 0,
                                         borderRadius: '2px',
                                         cursor: 'pointer',
                                         border: editForm.color === color ? '2px solid white' : '1px solid transparent',
@@ -152,6 +160,18 @@ const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, onMove, view
             <div className="token-display">
                 <span
                     className="token"
+                    {...(maskSecrets && !isRevealed ? {
+                        role: 'button',
+                        tabIndex: 0,
+                        'aria-label': 'Mostrar código',
+                        onKeyDown: (e: React.KeyboardEvent) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setIsRevealed(true);
+                            }
+                        },
+                    } : {})}
                     onClick={(e) => {
                         if (maskSecrets && !isRevealed) {
                             e.stopPropagation();
@@ -192,19 +212,19 @@ const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, onMove, view
 
             <div className="item-actions">
                 {!isFirst && (
-                    <button className="btn-icon-small" onClick={(e) => { e.stopPropagation(); onMove(item.id, 'up'); }} title="Mover para Cima">
+                    <button className="btn-icon-small" onClick={(e) => { e.stopPropagation(); onMove(item.id, 'up'); }} title="Mover para Cima" aria-label="Mover para cima">
                         ↑
                     </button>
                 )}
                 {!isLast && (
-                    <button className="btn-icon-small" onClick={(e) => { e.stopPropagation(); onMove(item.id, 'down'); }} title="Mover para Baixo">
+                    <button className="btn-icon-small" onClick={(e) => { e.stopPropagation(); onMove(item.id, 'down'); }} title="Mover para Baixo" aria-label="Mover para baixo">
                         ↓
                     </button>
                 )}
-                <button className="btn-icon-small" onClick={(e) => { e.stopPropagation(); setIsEditing(true); }} title="Editar">
+                <button className="btn-icon-small" onClick={(e) => { e.stopPropagation(); setIsEditing(true); }} title="Editar" aria-label={`Editar ${item.account}`}>
                     ✎
                 </button>
-                <button className="btn-icon-small delete" onClick={handleRemove} title="Remover">
+                <button className="btn-icon-small delete" onClick={handleRemove} title="Remover" aria-label={`Remover ${item.account}`}>
                     ✕
                 </button>
             </div>
