@@ -225,7 +225,10 @@ const importOwnBackup = (data: unknown, store: Store): ImportResult => {
         const secret = typeof entry?.secret === 'string' ? entry.secret.trim() : '';
         if (!secret || seen.has(secret)) continue;
         seen.add(secret);
-        newItems.push({ ...entry, secret, id: generateItemId() } as TwoFAItem);
+        // The renderer calls string methods on account/issuer (search), so a missing one must not reach the vault.
+        const account = typeof entry.account === 'string' && entry.account.trim() ? entry.account : 'Conta Importada';
+        const issuer = typeof entry.issuer === 'string' && entry.issuer.trim() ? entry.issuer : 'Importado';
+        newItems.push({ ...entry, secret, account, issuer, id: generateItemId() } as TwoFAItem);
     }
 
     if (newItems.length > 0) {
