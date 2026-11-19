@@ -43,7 +43,7 @@ describe('Item', () => {
     // Mock clipboard
     Object.assign(navigator, {
       clipboard: {
-        writeText: jest.fn(),
+        writeText: jest.fn().mockResolvedValue(undefined),
       },
     });
   });
@@ -146,6 +146,41 @@ describe('Item', () => {
       expect(container.firstChild).toHaveClass('dragging');
   });
 
+  it('swatches de cor são botões acessíveis por teclado', () => {
+    render(<Item
+      item={mockItem}
+      onRemove={mockOnRemove}
+      onUpdate={mockOnUpdate}
+      onMove={mockOnMove}
+      viewMode="grid"
+      isFirst={false}
+      isLast={false}
+      isDragEnabled={false} maskSecrets={false}
+    />);
+
+    fireEvent.click(screen.getByTitle('Editar'));
+    const swatches = screen.getAllByRole('button', { name: /^Cor #/ });
+    expect(swatches.length).toBeGreaterThan(1);
+    fireEvent.click(swatches[1]);
+    expect(swatches[1]).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('código mascarado pode ser revelado com Enter', () => {
+    render(<Item
+      item={mockItem}
+      onRemove={mockOnRemove}
+      onUpdate={mockOnUpdate}
+      onMove={mockOnMove}
+      viewMode="grid"
+      isFirst={false}
+      isLast={false}
+      isDragEnabled={false} maskSecrets={true}
+    />);
+
+    fireEvent.keyDown(screen.getByRole('button', { name: 'Mostrar código' }), { key: 'Enter' });
+    expect(screen.getByText('123 456')).toBeInTheDocument();
+  });
+
   it('copies token to clipboard on click', async () => {
     render(<Item
       item={mockItem}
@@ -161,7 +196,7 @@ describe('Item', () => {
     fireEvent.click(screen.getByText('123 456'));
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith('123456');
-    expect(screen.getByText('Copiado!')).toBeInTheDocument();
+    expect(await screen.findByText('Copiado!')).toBeInTheDocument();
 
     await waitFor(() => {
         expect(screen.queryByText('Copiado!')).not.toBeInTheDocument();
