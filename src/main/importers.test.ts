@@ -208,6 +208,17 @@ describe('importers', () => {
             expect(saved[1]).toMatchObject({ color: '#fff', category: 'Trabalho' });
         });
 
+        it('preenche account/issuer ausentes ou inválidos para não quebrar a busca do renderer', async () => {
+            const file = await write('f.json', JSON.stringify([{ secret: HELLO_B32 }, { secret: RFC_SECRET_B32, account: 42, issuer: '  ' }]));
+            expect(await importPlain(file, store)).toEqual({ success: true, count: 2 });
+            for (const item of getTwoFAItems(store)) {
+                expect(typeof item.account).toBe('string');
+                expect(typeof item.issuer).toBe('string');
+                expect(item.account.length).toBeGreaterThan(0);
+                expect(item.issuer.length).toBeGreaterThan(0);
+            }
+        });
+
         it('importar o mesmo backup duas vezes não duplica contas', async () => {
             const file = await write('p.json', JSON.stringify(items));
             await importPlain(file, store);
