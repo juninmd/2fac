@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { TwoFAItem } from '../types';
 import { useToken } from '../hooks/useToken';
+import { copyableCode } from '../utils/tokenUtils';
 import { COLORS } from '../constants';
 import IssuerIcon from './IssuerIcon';
 
@@ -29,8 +30,9 @@ const TokenDetail: React.FC<TokenDetailProps> = ({ item, onUpdate, onRemove, mas
     }, [item]);
 
     const copyToClipboard = () => {
-        // Remove spaces for 6/7/8 digit formatting
-        const rawToken = token.replace(/\s/g, '');
+        // "ERROR" is not a code: copying it and showing "Copiado!" would mislead.
+        const rawToken = copyableCode(token);
+        if (!rawToken) return;
         navigator.clipboard.writeText(rawToken);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);

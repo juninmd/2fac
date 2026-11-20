@@ -18,6 +18,8 @@ export const useToken = (item: TwoFAItem) => {
     const generateToken = () => {
         try {
             const { encoding, secret, issuer, account, algorithm, digits, period: itemPeriod } = item;
+            // HOTP depends on a counter this app does not store: a TOTP code from its secret never validates.
+            if (item.type === 'hotp') throw new Error('HOTP accounts are not supported');
             let secretObj;
 
             switch (encoding) {
