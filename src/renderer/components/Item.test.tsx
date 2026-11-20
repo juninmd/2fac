@@ -181,6 +181,25 @@ describe('Item', () => {
     expect(screen.getByText('123 456')).toBeInTheDocument();
   });
 
+  it('does not copy or confirm when the token is ERROR', () => {
+    mockUseToken.mockReturnValue({ token: 'ERROR', timeLeft: 15, period: 30 });
+    render(<Item
+      item={mockItem}
+      onRemove={mockOnRemove}
+      onUpdate={mockOnUpdate}
+      onMove={mockOnMove}
+      viewMode="grid"
+      isFirst={false}
+      isLast={false}
+      isDragEnabled={false} maskSecrets={false}
+    />);
+
+    fireEvent.click(screen.getByText('ERROR'));
+
+    expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+    expect(screen.queryByText('Copiado!')).not.toBeInTheDocument();
+  });
+
   it('copies token to clipboard on click', async () => {
     render(<Item
       item={mockItem}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { TwoFAItem } from '../types';
 import { useToken } from '../hooks/useToken';
+import { copyableCode } from '../utils/tokenUtils';
 import { COLORS } from '../constants';
 import IssuerIcon from './IssuerIcon';
 import { useSortable } from '@dnd-kit/sortable';
@@ -31,7 +32,8 @@ const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, onMove, view
 
 
     const copyToClipboard = () => {
-        const rawToken = token.replace(/\s/g, '');
+        const rawToken = copyableCode(token);
+        if (!rawToken) return;
         navigator.clipboard.writeText(rawToken).then(
             () => {
                 setCopied(true);

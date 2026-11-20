@@ -138,4 +138,10 @@ describe('useToken', () => {
         expect(console.error).toHaveBeenCalledWith('Failed to generate token:', expect.any(Error));
         expect(result.current.token).toBe('ERROR');
     });
+
+    it('shows ERROR for an HOTP item instead of a time-based code that never validates', () => {
+        const { result } = renderHook(() => useToken({ ...mockItem, type: 'hotp' }));
+        expect(result.current.token).toBe('ERROR');
+        expect(OTPAuth.TOTP).not.toHaveBeenCalled();
+    });
 });
