@@ -19,6 +19,7 @@ import {
     getAppSettings,
     setAppSettings,
     setSessionKey,
+    rekeyVault,
     getSessionKey,
 } from './store';
 import { hashPassword, encryptData, getArgonKey, verifyPassword, legacyHashPassword } from './crypto';
@@ -379,15 +380,11 @@ ipcMain.handle('scan-screen-qr', async () => {
 ipcMain.handle('set-master-password', async (_event, password: string) => {
     const salt = crypto.randomBytes(32).toString('hex');
     const hash = await hashPassword(password, salt);
+    const key = await getArgonKey(password, Buffer.from(salt, 'hex'));
+
+    // Re-encrypt first: if the current vault can't be read, keep the old password instead of locking the codes away.
+    rekeyVault(store, key);
     store.set('masterPassword', { hash, salt });
-
-    // Derive key and set session key
-    const saltBuffer = Buffer.from(salt, 'hex');
-    const key = await getArgonKey(password, saltBuffer);
-    setSessionKey(key);
-
-    // Trigger a read which will encrypt existing plaintext items
-    getTwoFAItems(store);
 
     return true;
 });

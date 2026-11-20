@@ -67,6 +67,24 @@ export const setTwoFAItems = (store: Store, items: TwoFAItem[]): void => {
     }
 };
 
+/**
+ * Re-encrypts the vault with a new key (master password change). The vault was only ever encrypted
+ * with the previous session key, so switching keys without re-encrypting made every code unreadable.
+ * Throws, leaving the vault and key untouched, if the current vault cannot be read.
+ */
+export const rekeyVault = (store: Store, newKey: Buffer): void => {
+    let items: TwoFAItem[];
+    if (store.has('encryptedVault')) {
+        if (!sessionKey) throw new Error('Vault is locked: unlock it before changing the master password');
+        const encryptedBackup = store.get('encryptedVault') as EncryptedBackup;
+        items = JSON.parse(decryptDataWithKey(encryptedBackup, sessionKey)) as TwoFAItem[];
+    } else {
+        items = store.get('twoFAItems', []) as TwoFAItem[];
+    }
+    setSessionKey(newKey);
+    setTwoFAItems(store, items);
+};
+
 export const addTwoFAItem = (store: Store, item: Omit<TwoFAItem, 'id'>): TwoFAItem => {
     const items = getTwoFAItems(store);
     const newItem: TwoFAItem = {
