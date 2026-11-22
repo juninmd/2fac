@@ -62,3 +62,4 @@ out/
 *.tgz
 *.tar.gz
 release/
+test-results/
