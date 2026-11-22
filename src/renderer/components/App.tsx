@@ -11,6 +11,9 @@ import TokenDetail from './TokenDetail';
 import UpdateBanner from './UpdateBanner';
 import './App.css';
 
+// Wheel/touch/pointer cover trackpad scrolling and touchscreens, which fire no mousemove.
+const ACTIVITY_EVENTS = ['mousemove', 'keydown', 'click', 'wheel', 'touchstart', 'pointerdown'] as const;
+
 const App: React.FC = () => {
     const [items, setItems] = useState<TwoFAItem[]>([]);
     const [filteredItems, setFilteredItems] = useState<TwoFAItem[]>([]);
@@ -155,16 +158,12 @@ const App: React.FC = () => {
 
         if (!isLocked && settings?.autoLock) {
             resetTimer();
-            window.addEventListener('mousemove', resetTimer);
-            window.addEventListener('keydown', resetTimer);
-            window.addEventListener('click', resetTimer);
+            ACTIVITY_EVENTS.forEach(type => window.addEventListener(type, resetTimer, { passive: true }));
         }
 
         return () => {
             if (timer) clearTimeout(timer);
-            window.removeEventListener('mousemove', resetTimer);
-            window.removeEventListener('keydown', resetTimer);
-            window.removeEventListener('click', resetTimer);
+            ACTIVITY_EVENTS.forEach(type => window.removeEventListener(type, resetTimer));
         };
     }, [isLocked, settings]);
 
