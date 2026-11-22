@@ -32,6 +32,7 @@ import {
 } from './importers';
 import { initAutoUpdater } from './updater';
 import { createUnlockGuard } from './unlockGuard';
+import { isValidMasterPassword } from './masterPassword';
 import { TwoFAItem, AppSettings } from './types';
 
 const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
@@ -378,7 +379,8 @@ ipcMain.handle('scan-screen-qr', async () => {
     }
 });
 
-ipcMain.handle('set-master-password', async (_event, password: string) => {
+ipcMain.handle('set-master-password', async (_event, password: unknown) => {
+    if (!isValidMasterPassword(password)) return false;
     const salt = crypto.randomBytes(32).toString('hex');
     const hash = await hashPassword(password, salt);
     const key = await getArgonKey(password, Buffer.from(salt, 'hex'));
