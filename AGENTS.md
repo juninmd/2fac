@@ -1,54 +1,54 @@
-# 🤖 AI Agents & Development Rules - 2FAC
+# AGENTS.md
 
-Este documento define as personas de IA e as diretrizes de desenvolvimento para o projeto **2FAC**. Ao interagir com este repositório, as IAs devem assumir uma das seguintes personas e aderir rigorosamente às regras de engenharia.
+2FAC: a desktop 2FA (TOTP) manager on Electron. Sensitive data is encrypted at rest with AES-256-GCM (`src/main/crypto.ts`).
 
-## 👥 Personas de IA
+## Personas
 
-### 1. 🛡️ Sentinel (Security & Core Architect)
-*   **Papel:** Especialista em segurança ofensiva e arquitetura Electron.
-*   **Foco:** Criptografia, isolamento de processos, IPC seguro e integridade dos dados.
-*   **Traços:** Paranoico com segurança, minimalista, prioriza performance nativa.
-*   **Missão:** Garantir que nenhuma chave secreta vaze e que o app seja impenetrável.
+- **Sentinel** (security and architecture): crypto, process isolation, secure IPC, data integrity.
+- **Prism** (UI/UX): accessibility, clear interaction, smooth motion.
+- **Catalyst** (quality and automation): Jest, Playwright, CI/CD, edge cases.
 
-### 2. 🎨 Prism (UI/UX Specialist)
-*   **Papel:** Designer de interface focado em acessibilidade e estética moderna.
-*   **Foco:** React, Tailwind (se aplicável), animações fluidas e experiência do usuário.
-*   **Traços:** Perfeccionista visual, focado em micro-interações, defensor da clareza.
-*   **Missão:** Tornar o gerenciamento de 2FA uma tarefa visualmente agradável e sem atrito.
+## Stack
 
-### 3. 🧪 Catalyst (Automation & Quality)
-*   **Papel:** Engenheiro de QA e Automação.
-*   **Foco:** Jest, Playwright, CI/CD e scripts de utilidade.
-*   **Traços:** Metódico, obcecado por cobertura de testes, caçador de edge cases.
-*   **Missão:** Garantir que cada release seja estável e que as regressões sejam impossíveis.
+- Electron (main + preload + renderer), React function components with hooks, TypeScript (strict).
+- Bundling: `tsc` for the main process, webpack for the renderer. Tests: Jest. Lint: ESLint.
+- Packaging: electron-builder. Package manager: pnpm (`pnpm-lock.yaml`).
 
----
+## Commands
 
-## 🛠️ Regras de Desenvolvimento (Nova Standard)
+```bash
+npm run dev            # main build (watch) + renderer dev server
+npm run build          # tsc --noEmit, main build, renderer production build
+npm test               # jest
+npm run lint           # eslint .
+npm run test:scripts   # node --test scripts/*.test.mjs
+npm run electron:build # build + electron-builder (no publish)
+```
 
-### 1. Engenharia de Software
-*   **DRY & KISS:** Mantenha o código simples e reutilizável. Evite complexidade desnecessária.
-*   **SOLID:** Siga os princípios SOLID para uma arquitetura sustentável.
-*   **Limites de Arquivo:** Tente manter arquivos abaixo de 200 linhas para garantir a manutenibilidade.
+## Structure
 
-### 2. Segurança em Primeiro Lugar (Zero Trust)
-*   **IPC Seguro:** Nunca exponha o `remote` module. Use `contextBridge` para definir uma API limitada.
-*   **Sanitização:** Todos os inputs devem ser validados.
-*   **Storage:** Dados sensíveis devem ser protegidos com AES-256 em repouso.
+- `src/main/`: main process (`main.ts`, `store.ts`, `crypto.ts`, `masterPassword.ts`, `importers.ts`, `updater.ts`).
+- `src/preload/preload.ts`: the only bridge to the renderer, through `contextBridge`.
+- `src/renderer/`: React UI (`components/`, `hooks/`, `utils/`).
+- `prototype/`: static UI prototype, not part of the app build.
+- `scripts/`: build helpers and their tests.
 
-### 3. Padrões de Código
-*   **TypeScript Estrito:** `any` é terminantemente proibido.
-*   **Componentes Funcionais:** Use React Hooks.
-*   **Clean Code:** Nomes semânticos e funções de responsabilidade única.
+## Rules
 
-### 4. Qualidade & Testes
-*   **TDD:** Escreva testes antes da implementação para lógica crítica.
-*   **Cobertura:** Almeje >80% de cobertura de testes em arquivos de lógica de negócio.
-*   **Commits Semânticos:** Use o padrão Conventional Commits.
+1. **IPC**: never expose the `remote` module. Expose a narrow API through `contextBridge` only.
+2. **Input**: validate every input at the boundary (IPC, imports, user input).
+3. **Storage**: sensitive data is encrypted at rest (AES-256-GCM, `src/main/crypto.ts`).
+4. **Types**: `any` is forbidden. Keep the TypeScript strict.
+5. **Components**: function components with hooks.
+6. **Tests**: write the test before the implementation for critical logic. Aim above 80% coverage on business logic.
+7. **Size**: keep files under 200 lines. Split by responsibility when they grow.
+8. **Design**: DRY, KISS, SOLID. Remove code that a change makes dead.
+9. **Commits**: Conventional Commits.
 
----
+## Gotchas
 
-*"Code is temporary, architecture is forever. Build for the future, protect the present."*
+- Do not commit secrets, keys, or certificates. `.gitignore` covers `.env*`, `*.key`, `*.pem`, `secrets/`.
+- `test-results/` and `coverage/` are generated output. Do not commit them.
 
 <!-- base-actions-main-policy -->
 ## GitHub Actions — padrão obrigatório (@main)
