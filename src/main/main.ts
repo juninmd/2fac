@@ -31,6 +31,7 @@ import {
     importPlain,
 } from './importers';
 import { initAutoUpdater } from './updater';
+import { createUnlockGuard } from './unlockGuard';
 import { TwoFAItem, AppSettings } from './types';
 
 const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
@@ -389,11 +390,10 @@ ipcMain.handle('set-master-password', async (_event, password: string) => {
     return true;
 });
 
-let failedAttempts = 0;
-const MAX_ATTEMPTS = 5;
+const unlockGuard = createUnlockGuard({ maxAttempts: 5, lockoutMs: 30_000 });
 
 ipcMain.handle('check-master-password', async (_event, password: string) => {
-    if (failedAttempts >= MAX_ATTEMPTS) {
+    if (unlockGuard.isLocked()) {
         return false;
     }
     const savedData = store.get('masterPassword') as { hash: string; salt: string } | undefined;
@@ -405,12 +405,12 @@ ipcMain.handle('check-master-password', async (_event, password: string) => {
         : (await legacyHashPassword(password, savedData.salt)) === savedData.hash;
 
     if (valid) {
-        failedAttempts = 0;
+        unlockGuard.recordSuccess();
         const saltBuffer = Buffer.from(savedData.salt, 'hex');
         const key = await getArgonKey(password, saltBuffer);
         setSessionKey(key);
     } else {
-        failedAttempts++;
+        unlockGuard.recordFailure();
     }
 
     return valid;
