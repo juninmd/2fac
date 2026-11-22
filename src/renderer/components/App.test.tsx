@@ -357,6 +357,27 @@ describe('App', () => {
       jest.useRealTimers();
   });
 
+  // Trackpad/wheel scrolling keeps the pointer still: no mousemove, yet the user is active.
+  it.each([
+    ['wheel', () => fireEvent.wheel(window)],
+    ['touchstart', () => fireEvent.touchStart(window)],
+    ['pointerdown', () => fireEvent.pointerDown(window)],
+  ])('resets auto-lock timer on %s activity', async (_name, act_) => {
+      jest.useFakeTimers();
+      mockGetSettings.mockResolvedValue({ autoLock: true, autoLockTimeout: 1 });
+
+      render(<App />);
+      fireEvent.click(screen.getByText('Unlock'));
+      await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
+
+      act(() => { jest.advanceTimersByTime(50 * 1000); });
+      act_();
+      act(() => { jest.advanceTimersByTime(50 * 1000); });
+
+      expect(screen.queryByTestId('lock-screen')).not.toBeInTheDocument();
+      jest.useRealTimers();
+  });
+
   it('handles failed export', async () => {
       window.alert = jest.fn();
       mockExport2FA.mockRejectedValue(new Error('Export failed'));
