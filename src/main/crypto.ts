@@ -6,10 +6,14 @@ import { EncryptedBackup } from './types';
 const ENCRYPTION_ALGORITHM = 'aes-256-gcm';
 const KEY_LENGTH = 32;
 const IV_LENGTH = 16;
+const AUTH_TAG_LENGTH = 16;
+// Pinned to the argon2 package defaults used so far: changing any value changes every derived key.
+const ARGON2_PARAMS = { memoryCost: 65536, timeCost: 3, parallelism: 4 } as const;
 
 export const getArgonKey = async (password: string, salt: Buffer): Promise<Buffer> => {
     const hash = await argon2.hash(password, {
         type: argon2.argon2id,
+        ...ARGON2_PARAMS,
         salt,
         hashLength: KEY_LENGTH,
         raw: true
@@ -51,12 +55,21 @@ export const encryptDataWithKey = (data: string, key: Buffer): EncryptedBackup =
     };
 };
 
+// Without authTagLength, GCM accepts tags as short as 4 bytes, which weakens integrity.
+const createGcmDecipher = (key: Buffer, iv: Buffer, authTag: Buffer): crypto.DecipherGCM => {
+    if (authTag.length !== AUTH_TAG_LENGTH) {
+        throw new Error('Invalid authentication tag length');
+    }
+    const decipher = crypto.createDecipheriv(ENCRYPTION_ALGORITHM, key, iv, { authTagLength: AUTH_TAG_LENGTH });
+    decipher.setAuthTag(authTag);
+    return decipher;
+};
+
 export const decryptDataWithKey = (backup: EncryptedBackup, key: Buffer): string => {
     const iv = Buffer.from(backup.iv, 'hex');
     const authTag = Buffer.from(backup.authTag, 'hex');
 
-    const decipher = crypto.createDecipheriv(ENCRYPTION_ALGORITHM, key, iv);
-    decipher.setAuthTag(authTag);
+    const decipher = createGcmDecipher(key, iv, authTag);
 
     let decrypted = decipher.update(backup.data, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
@@ -89,8 +102,7 @@ export const decryptData = async (backup: EncryptedBackup, password: string): Pr
     const authTag = Buffer.from(backup.authTag, 'hex');
 
     const key = await getArgonKey(password, salt);
-    const decipher = crypto.createDecipheriv(ENCRYPTION_ALGORITHM, key, iv);
-    decipher.setAuthTag(authTag);
+    const decipher = createGcmDecipher(key, iv, authTag);
 
     let decrypted = decipher.update(backup.data, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
