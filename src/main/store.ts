@@ -50,14 +50,16 @@ export const getTwoFAItems = (store: Store): TwoFAItem[] => {
     return items;
 };
 
+const writeVault = (store: Store, items: TwoFAItem[], key: Buffer): void => {
+    store.set('encryptedVault', encryptDataWithKey(JSON.stringify(items), key));
+    if (store.has('twoFAItems')) {
+        store.delete('twoFAItems');
+    }
+};
+
 export const setTwoFAItems = (store: Store, items: TwoFAItem[]): void => {
     if (sessionKey) {
-        const data = JSON.stringify(items);
-        const encrypted = encryptDataWithKey(data, sessionKey);
-        store.set('encryptedVault', encrypted);
-        if (store.has('twoFAItems')) {
-            store.delete('twoFAItems');
-        }
+        writeVault(store, items, sessionKey);
     } else {
         if (store.has('encryptedVault')) {
             console.warn('Attempted to overwrite encrypted vault without session key. Operation aborted to prevent data loss.');
@@ -81,8 +83,9 @@ export const rekeyVault = (store: Store, newKey: Buffer): void => {
     } else {
         items = store.get('twoFAItems', []) as TwoFAItem[];
     }
+    // Write first: if the write fails, memory must still hold the key that opens the vault on disk.
+    writeVault(store, items, newKey);
     setSessionKey(newKey);
-    setTwoFAItems(store, items);
 };
 
 export const addTwoFAItem = (store: Store, item: Omit<TwoFAItem, 'id'>): TwoFAItem => {
