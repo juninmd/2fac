@@ -1,7 +1,7 @@
 /** @jest-environment node */
 import * as crypto from 'crypto';
 import type Store from 'electron-store';
-import { getTwoFAItems, rekeyVault, setSessionKey, setTwoFAItems } from './store';
+import { getSessionKey, getTwoFAItems, rekeyVault, setSessionKey, setTwoFAItems } from './store';
 import type { TwoFAItem } from './types';
 
 // electron-store exige o binário do Electron; os testes usam um store em memória.
@@ -30,6 +30,21 @@ describe('rekeyVault (master password change)', () => {
 
         rekeyVault(store, key());
 
+        expect(getTwoFAItems(store)).toEqual([item]);
+    });
+
+    it('keeps the old key in memory when writing the re-keyed vault fails', () => {
+        const store = createFakeStore();
+        const oldKey = key();
+        setSessionKey(oldKey);
+        setTwoFAItems(store, [item]);
+        const realSet = store.set.bind(store);
+        store.set = (() => { throw new Error('disk full'); }) as unknown as Store['set'];
+
+        expect(() => rekeyVault(store, key())).toThrow('disk full');
+
+        store.set = realSet;
+        expect(getSessionKey()).toBe(oldKey);
         expect(getTwoFAItems(store)).toEqual([item]);
     });
 
