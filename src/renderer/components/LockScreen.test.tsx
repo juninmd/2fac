@@ -27,7 +27,7 @@ describe('LockScreen', () => {
 
     render(<LockScreen onUnlock={mockOnUnlock} />);
 
-    expect(screen.getByText('Carregando...')).toBeInTheDocument();
+    expect(screen.getByLabelText('Carregando...')).toBeInTheDocument();
 
     await waitFor(() => {
         expect(screen.getByText('Desbloquear 2FAC')).toBeInTheDocument();

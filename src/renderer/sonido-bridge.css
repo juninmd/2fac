@@ -1,0 +1,48 @@
+/*
+ * Bridge between the app palette and Sonido's --sn-* tokens.
+ *
+ * Imported after @juninmd/sonido/styles.css, so the selectors below win over
+ * the package themes. The app keeps owning --bg-*, --text-* and
+ * --primary-color (including the accent picked in Settings); Sonido only
+ * reads them through its own token names.
+ */
+:root,
+:root[data-theme] {
+  color-scheme: dark;
+  --sn-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  --sn-font-display: var(--sn-font);
+  --sn-font-mono: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Superfícies */
+  --sn-color-bg: var(--bg-dark);
+  --sn-color-surface: var(--bg-card);
+  --sn-color-surface-2: var(--bg-hover);
+  --sn-color-surface-hover: var(--bg-hover);
+  --sn-color-border: var(--border-color);
+  --sn-color-border-soft: color-mix(in srgb, var(--border-color) 55%, transparent);
+
+  /* Texto */
+  --sn-color-text: var(--text-primary);
+  --sn-color-text-dim: var(--text-secondary);
+  --sn-color-text-faint: var(--text-secondary);
+
+  /* Marca: o acento do app manda nos botões e no anel do código */
+  --sn-color-accent: var(--primary-color);
+  --sn-color-accent-2: var(--primary-hover);
+  --sn-color-on-accent: #ffffff;
+  --sn-gradient: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+  --sn-sig-1: var(--primary-color);
+  --sn-sig-2: var(--primary-hover);
+  --sn-sig-3: color-mix(in srgb, var(--primary-color) 55%, var(--text-primary));
+  --sn-gradient-signature: linear-gradient(115deg, var(--sn-sig-1), var(--sn-sig-2));
+
+  /* Vidro/scrim seguem a superfície do app, não o preto do tema padrão */
+  --sn-glass: color-mix(in srgb, var(--bg-card) 72%, transparent);
+  --sn-glass-strong: var(--bg-card);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}

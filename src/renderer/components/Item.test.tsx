@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { ToastProvider } from '@juninmd/sonido';
 import Item from './Item';
 import { TwoFAItem } from '../types';
 
@@ -39,6 +40,25 @@ describe('Item', () => {
   const mockOnUpdate = jest.fn();
   const mockOnMove = jest.fn();
 
+  type ItemProps = React.ComponentProps<typeof Item>;
+  const baseProps: ItemProps = {
+    item: mockItem,
+    onRemove: mockOnRemove,
+    onUpdate: mockOnUpdate,
+    onMove: mockOnMove,
+    viewMode: 'grid',
+    isFirst: false,
+    isLast: false,
+    isDragEnabled: false,
+    maskSecrets: false,
+  };
+
+  const renderItem = (overrides: Partial<ItemProps> = {}) => render(
+    <ToastProvider>
+      <Item {...baseProps} {...overrides} />
+    </ToastProvider>
+  );
+
   beforeAll(() => {
     // Mock clipboard
     Object.assign(navigator, {
@@ -68,58 +88,31 @@ describe('Item', () => {
   });
 
   it('renders correctly', () => {
-    render(<Item
-      item={mockItem}
-      onRemove={mockOnRemove}
-      onUpdate={mockOnUpdate}
-      onMove={mockOnMove}
-      viewMode="grid"
-      isFirst={false}
-      isLast={false}
-      isDragEnabled={false} maskSecrets={false}
-    />);
+    renderItem();
 
     expect(screen.getByText('Google')).toBeInTheDocument();
     expect(screen.getByText('test@example.com')).toBeInTheDocument();
-    expect(screen.getByText('123 456')).toBeInTheDocument();
+    expect(screen.getByLabelText('123 456')).toBeInTheDocument();
   });
 
   it('handles defaults (no color, no issuer)', () => {
-      const itemNoColor: TwoFAItem = { ...mockItem, color: undefined, issuer: '' };
-      render(<Item
-        item={itemNoColor}
-        onRemove={mockOnRemove}
-        onUpdate={mockOnUpdate}
-        onMove={mockOnMove}
-        viewMode="grid"
-        isFirst={false}
-        isLast={false}
-        isDragEnabled={false} maskSecrets={false}
-      />);
+      renderItem({ item: { ...mockItem, color: undefined, issuer: '' } });
 
       // Should default to '?' for icon
       expect(screen.getByText('?')).toBeInTheDocument();
   });
 
-  it('renders low time warning (red timer)', () => {
+  it('renders low time warning (danger ring)', () => {
       mockUseToken.mockReturnValue({
         token: '123 456',
         timeLeft: 5, // Low time
         period: 30,
       });
 
-      render(<Item
-        item={mockItem}
-        onRemove={mockOnRemove}
-        onUpdate={mockOnUpdate}
-        onMove={mockOnMove}
-        viewMode="grid"
-        isFirst={false}
-        isLast={false}
-        isDragEnabled={false} maskSecrets={false}
-      />);
+      const { container } = renderItem();
 
-      expect(screen.getByText('123 456')).toBeInTheDocument();
+      expect(screen.getByLabelText('123 456')).toBeInTheDocument();
+      expect(container.querySelector('.token-ring--low')).toBeInTheDocument();
   });
 
   it('renders dragging state', () => {
@@ -132,114 +125,54 @@ describe('Item', () => {
         isDragging: true,
       });
 
-      const { container } = render(<Item
-        item={mockItem}
-        onRemove={mockOnRemove}
-        onUpdate={mockOnUpdate}
-        onMove={mockOnMove}
-        viewMode="grid"
-        isFirst={false}
-        isLast={false}
-        isDragEnabled={true} maskSecrets={false}
-      />);
+      const { container } = renderItem({ isDragEnabled: true });
 
       expect(container.firstChild).toHaveClass('dragging');
   });
 
   it('swatches de cor são botões acessíveis por teclado', () => {
-    render(<Item
-      item={mockItem}
-      onRemove={mockOnRemove}
-      onUpdate={mockOnUpdate}
-      onMove={mockOnMove}
-      viewMode="grid"
-      isFirst={false}
-      isLast={false}
-      isDragEnabled={false} maskSecrets={false}
-    />);
+    renderItem();
 
-    fireEvent.click(screen.getByTitle('Editar'));
-    const swatches = screen.getAllByRole('button', { name: /^Cor #/ });
+    fireEvent.click(screen.getByLabelText('Editar test@example.com'));
+    const swatches = screen.getAllByLabelText(/^Cor #/);
     expect(swatches.length).toBeGreaterThan(1);
     fireEvent.click(swatches[1]);
     expect(swatches[1]).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('código mascarado pode ser revelado com Enter', () => {
-    render(<Item
-      item={mockItem}
-      onRemove={mockOnRemove}
-      onUpdate={mockOnUpdate}
-      onMove={mockOnMove}
-      viewMode="grid"
-      isFirst={false}
-      isLast={false}
-      isDragEnabled={false} maskSecrets={true}
-    />);
+  it('código mascarado pode ser revelado', () => {
+    renderItem({ maskSecrets: true });
 
-    fireEvent.keyDown(screen.getByRole('button', { name: 'Mostrar código' }), { key: 'Enter' });
-    expect(screen.getByText('123 456')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Mostrar código' }));
+    expect(screen.getByLabelText('123 456')).toBeInTheDocument();
   });
 
   it('does not copy or confirm when the token is ERROR', () => {
     mockUseToken.mockReturnValue({ token: 'ERROR', timeLeft: 15, period: 30 });
-    render(<Item
-      item={mockItem}
-      onRemove={mockOnRemove}
-      onUpdate={mockOnUpdate}
-      onMove={mockOnMove}
-      viewMode="grid"
-      isFirst={false}
-      isLast={false}
-      isDragEnabled={false} maskSecrets={false}
-    />);
+    renderItem();
 
-    fireEvent.click(screen.getByText('ERROR'));
+    fireEvent.click(screen.getByLabelText('ERROR'));
 
     expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
     expect(screen.queryByText('Copiado!')).not.toBeInTheDocument();
   });
 
   it('copies token to clipboard on click', async () => {
-    render(<Item
-      item={mockItem}
-      onRemove={mockOnRemove}
-      onUpdate={mockOnUpdate}
-      onMove={mockOnMove}
-      viewMode="grid"
-      isFirst={false}
-      isLast={false}
-      isDragEnabled={false} maskSecrets={false}
-    />);
+    renderItem();
 
-    fireEvent.click(screen.getByText('123 456'));
+    fireEvent.click(screen.getByLabelText('123 456'));
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith('123456');
     expect(await screen.findByText('Copiado!')).toBeInTheDocument();
-
-    await waitFor(() => {
-        expect(screen.queryByText('Copiado!')).not.toBeInTheDocument();
-    }, { timeout: 3000 });
   });
 
   it('enters edit mode and updates item', () => {
-    render(<Item
-      item={mockItem}
-      onRemove={mockOnRemove}
-      onUpdate={mockOnUpdate}
-      onMove={mockOnMove}
-      viewMode="grid"
-      isFirst={false}
-      isLast={false}
-      isDragEnabled={false} maskSecrets={false}
-    />);
+    renderItem();
 
-    fireEvent.click(screen.getByTitle('Editar'));
+    fireEvent.click(screen.getByLabelText('Editar test@example.com'));
 
-    expect(screen.getByPlaceholderText('Emissor')).toBeInTheDocument();
-
-    fireEvent.change(screen.getByPlaceholderText('Emissor'), { target: { value: 'Google Updated' } });
-    fireEvent.change(screen.getByPlaceholderText('Conta'), { target: { value: 'new@example.com' } });
+    fireEvent.change(screen.getByLabelText('Emissor'), { target: { value: 'Google Updated' } });
+    fireEvent.change(screen.getByLabelText('Conta'), { target: { value: 'new@example.com' } });
 
     fireEvent.click(screen.getByText('Salvar'));
 
@@ -250,200 +183,104 @@ describe('Item', () => {
   });
 
   it('cancels edit mode', () => {
-    render(<Item
-      item={mockItem}
-      onRemove={mockOnRemove}
-      onUpdate={mockOnUpdate}
-      onMove={mockOnMove}
-      viewMode="grid"
-      isFirst={false}
-      isLast={false}
-      isDragEnabled={false} maskSecrets={false}
-    />);
+    renderItem();
 
-    fireEvent.click(screen.getByTitle('Editar'));
+    fireEvent.click(screen.getByLabelText('Editar test@example.com'));
     fireEvent.click(screen.getByText('Cancelar'));
 
-    expect(screen.queryByPlaceholderText('Emissor')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Emissor')).not.toBeInTheDocument();
     expect(mockOnUpdate).not.toHaveBeenCalled();
   });
 
   it('handles remove', () => {
-      const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
-      render(<Item
-        item={mockItem}
-        onRemove={mockOnRemove}
-        onUpdate={mockOnUpdate}
-        onMove={mockOnMove}
-        viewMode="grid"
-        isFirst={false}
-        isLast={false}
-        isDragEnabled={false} maskSecrets={false}
-      />);
+      renderItem();
 
-      fireEvent.click(screen.getByTitle('Remover'));
+      fireEvent.click(screen.getByLabelText('Remover test@example.com'));
+      fireEvent.click(screen.getByText('Remover'));
 
-      expect(confirmSpy).toHaveBeenCalled();
       expect(mockOnRemove).toHaveBeenCalledWith('1');
-      confirmSpy.mockRestore();
   });
 
   it('does not remove if canceled', () => {
-      const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(false);
-      render(<Item
-        item={mockItem}
-        onRemove={mockOnRemove}
-        onUpdate={mockOnUpdate}
-        onMove={mockOnMove}
-        viewMode="grid"
-        isFirst={false}
-        isLast={false}
-        isDragEnabled={false} maskSecrets={false}
-      />);
+      renderItem();
 
-      fireEvent.click(screen.getByTitle('Remover'));
+      fireEvent.click(screen.getByLabelText('Remover test@example.com'));
+      fireEvent.click(screen.getByText('Cancelar'));
 
       expect(mockOnRemove).not.toHaveBeenCalled();
-      confirmSpy.mockRestore();
   });
 
   it('moves item up and down', () => {
-      render(<Item
-        item={mockItem}
-        onRemove={mockOnRemove}
-        onUpdate={mockOnUpdate}
-        onMove={mockOnMove}
-        viewMode="grid"
-        isFirst={false} // Should show UP
-        isLast={false}  // Should show DOWN
-        isDragEnabled={false} maskSecrets={false}
-      />);
+      renderItem();
 
-      fireEvent.click(screen.getByTitle('Mover para Cima'));
+      fireEvent.click(screen.getByLabelText('Mover para cima'));
       expect(mockOnMove).toHaveBeenCalledWith('1', 'up');
 
-      fireEvent.click(screen.getByTitle('Mover para Baixo'));
+      fireEvent.click(screen.getByLabelText('Mover para baixo'));
       expect(mockOnMove).toHaveBeenCalledWith('1', 'down');
   });
 
   it('hides move buttons based on position', () => {
-      const { rerender } = render(<Item
-        item={mockItem}
-        onRemove={mockOnRemove}
-        onUpdate={mockOnUpdate}
-        onMove={mockOnMove}
-        viewMode="grid"
-        isFirst={true}
-        isLast={false}
-        isDragEnabled={false} maskSecrets={false}
-      />);
+      const { rerender } = render(
+        <ToastProvider>
+          <Item {...baseProps} isFirst isLast={false} />
+        </ToastProvider>
+      );
 
-      expect(screen.queryByTitle('Mover para Cima')).not.toBeInTheDocument();
-      expect(screen.getByTitle('Mover para Baixo')).toBeInTheDocument();
+      expect(screen.queryByLabelText('Mover para cima')).not.toBeInTheDocument();
+      expect(screen.getByLabelText('Mover para baixo')).toBeInTheDocument();
 
-      rerender(<Item
-        item={mockItem}
-        onRemove={mockOnRemove}
-        onUpdate={mockOnUpdate}
-        onMove={mockOnMove}
-        viewMode="grid"
-        isFirst={false}
-        isLast={true}
-        isDragEnabled={false} maskSecrets={false}
-      />);
+      rerender(
+        <ToastProvider>
+          <Item {...baseProps} isFirst={false} isLast />
+        </ToastProvider>
+      );
 
-      expect(screen.getByTitle('Mover para Cima')).toBeInTheDocument();
-      expect(screen.queryByTitle('Mover para Baixo')).not.toBeInTheDocument();
+      expect(screen.getByLabelText('Mover para cima')).toBeInTheDocument();
+      expect(screen.queryByLabelText('Mover para baixo')).not.toBeInTheDocument();
   });
 
-    it('changes color in edit mode', () => {
-        const { container } = render(<Item
-            item={mockItem}
-            onRemove={mockOnRemove}
-            onUpdate={mockOnUpdate}
-            onMove={mockOnMove}
-            viewMode="grid"
-            isFirst={false}
-            isLast={false}
-            isDragEnabled={false} maskSecrets={false}
-        />);
+  it('changes color in edit mode', () => {
+      const { container } = renderItem();
 
-        fireEvent.click(screen.getByTitle('Editar'));
+      fireEvent.click(screen.getByLabelText('Editar test@example.com'));
 
-        const colorLabel = screen.getByText('Cor');
-        const grid = colorLabel.nextElementSibling;
-        const colorDivs = grid?.children;
-        fireEvent.click(colorDivs![1]); // Click 2nd color
+      const grid = container.querySelector('.color-grid');
+      fireEvent.click(grid!.children[1]); // Click 2nd color
 
-        fireEvent.click(screen.getByText('Salvar'));
+      fireEvent.click(screen.getByText('Salvar'));
 
-        expect(mockOnUpdate).toHaveBeenCalledWith('1', expect.objectContaining({
-            color: expect.any(String)
-        }));
-    });
+      expect(mockOnUpdate).toHaveBeenCalledWith('1', expect.objectContaining({
+          color: expect.any(String)
+      }));
+  });
 
-    it('renders in list view', () => {
-        const { container } = render(<Item
-            item={mockItem}
-            onRemove={mockOnRemove}
-            onUpdate={mockOnUpdate}
-            onMove={mockOnMove}
-            viewMode="list"
-            isFirst={false}
-            isLast={false}
-            isDragEnabled={false} maskSecrets={false}
-        />);
+  it('renders in list view', () => {
+      const { container } = renderItem({ viewMode: 'list' });
 
-        expect(container.firstChild).toHaveClass('list-item');
-    });
-});
+      expect(container.firstChild).toHaveClass('list-item');
+  });
 
-describe('Item', () => {
-    const mockItem = {
-        id: '1',
-        account: 'test@test.com',
-        issuer: 'Test',
-        secret: 'JBSWY3DPEHPK3PXP',
-    };
-    const mockOnRemove = jest.fn();
-    const mockOnUpdate = jest.fn();
-    const mockOnMove = jest.fn();
-    it('masks and unmasks secrets based on maskSecrets prop', () => {
-        const { rerender } = render(
-            <Item
-                item={mockItem}
-                onRemove={mockOnRemove}
-                onUpdate={mockOnUpdate}
-                onMove={mockOnMove}
-                viewMode="grid"
-                isFirst={false}
-                isLast={false}
-                isDragEnabled={false}
-                maskSecrets={true}
-            />
-        );
+  it('masks and unmasks secrets based on maskSecrets prop', () => {
+      const { rerender } = render(
+        <ToastProvider>
+          <Item {...baseProps} maskSecrets />
+        </ToastProvider>
+      );
 
-        // By default should be masked (6 digits = ••• •••)
-        expect(screen.getByText('••• •••')).toBeInTheDocument();
+      // By default should be masked (6 digits = ••• •••)
+      expect(screen.getByText('••• •••')).toBeInTheDocument();
 
-        // Click to unmask
-        fireEvent.click(screen.getByText('••• •••'));
-        expect(screen.getByText('123 456')).toBeInTheDocument();
+      // Click to unmask
+      fireEvent.click(screen.getByText('••• •••'));
+      expect(screen.getByLabelText('123 456')).toBeInTheDocument();
 
-        // Re-render with maskSecrets false
-        rerender(
-            <Item
-                item={mockItem}
-                onRemove={mockOnRemove}
-                onUpdate={mockOnUpdate}
-                onMove={mockOnMove}
-                viewMode="grid"
-                isFirst={false}
-                isLast={false}
-                isDragEnabled={false}
-                maskSecrets={false}
-            />
-        );
-        expect(screen.getByText('123 456')).toBeInTheDocument();
-    });
+      // Re-render with maskSecrets false
+      rerender(
+        <ToastProvider>
+          <Item {...baseProps} maskSecrets={false} />
+        </ToastProvider>
+      );
+      expect(screen.getByLabelText('123 456')).toBeInTheDocument();
+  });
 });

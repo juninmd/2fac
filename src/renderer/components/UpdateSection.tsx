@@ -1,4 +1,5 @@
 import React from 'react';
+import { Button } from '@juninmd/sonido';
 import { UpdateStatus } from '../types';
 import { useUpdateStatus } from '../hooks/useUpdateStatus';
 
@@ -21,16 +22,16 @@ const UpdateSection: React.FC = () => {
 
     return (
         <div className="update-section">
-            <h4 style={{ marginTop: '20px' }}>Atualizações</h4>
-            <p style={{ color: 'var(--text-secondary)' }}>Versão atual: {version || '—'}</p>
-            <p role="status" style={{ color: 'var(--text-secondary)' }}>{describeUpdate(status)}</p>
-            <div style={{ marginTop: '10px' }}>
+            <h4>Atualizações</h4>
+            <p className="settings-hint">Versão atual: {version || '—'}</p>
+            <p role="status" className="settings-hint">{describeUpdate(status)}</p>
+            <div className="update-actions">
                 {status.state === 'downloaded' ? (
-                    <button className="btn btn-primary" onClick={() => void install()}>Reiniciar e atualizar</button>
+                    <Button variant="primary" onClick={() => void install()}>Reiniciar e atualizar</Button>
                 ) : (
-                    <button className="btn btn-secondary" onClick={() => void check()} disabled={busy}>
+                    <Button variant="secondary" onClick={() => void check()} loading={status.state === 'checking'} disabled={busy}>
                         Verificar atualizações
-                    </button>
+                    </Button>
                 )}
             </div>
         </div>

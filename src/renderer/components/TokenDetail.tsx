@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { Badge, Button, ConfirmButton, Dialog, TextField, useToast } from '@juninmd/sonido';
 import { TwoFAItem } from '../types';
 import { useToken } from '../hooks/useToken';
 import { copyableCode } from '../utils/tokenUtils';
 import { COLORS } from '../constants';
 import IssuerIcon from './IssuerIcon';
+import { TokenCode, TokenRing } from './TokenCode';
 
 interface TokenDetailProps {
     item: TwoFAItem;
@@ -14,7 +16,7 @@ interface TokenDetailProps {
 
 const TokenDetail: React.FC<TokenDetailProps> = ({ item, onUpdate, onRemove, maskSecrets }) => {
     const { token, timeLeft, period } = useToken(item);
-    const [copied, setCopied] = useState(false);
+    const toast = useToast();
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState({ account: item.account, issuer: item.issuer, color: item.color ?? '#e23e3e', category: item.category ?? '' });
     const [isRevealed, setIsRevealed] = useState(false);
@@ -22,7 +24,6 @@ const TokenDetail: React.FC<TokenDetailProps> = ({ item, onUpdate, onRemove, mas
     React.useEffect(() => {
         setIsRevealed(false);
     }, [token]);
-
 
     // Sync form with item changes
     React.useEffect(() => {
@@ -34,8 +35,7 @@ const TokenDetail: React.FC<TokenDetailProps> = ({ item, onUpdate, onRemove, mas
         const rawToken = copyableCode(token);
         if (!rawToken) return;
         navigator.clipboard.writeText(rawToken);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        toast({ title: 'Copiado!', description: `${item.issuer} • ${item.account}`, tone: 'success', duration: 2000 });
     };
 
     React.useEffect(() => {
@@ -62,78 +62,55 @@ const TokenDetail: React.FC<TokenDetailProps> = ({ item, onUpdate, onRemove, mas
         setIsEditing(false);
     };
 
-    const handleDelete = () => {
-        if (window.confirm(`Remover "${item.account}" de ${item.issuer}?`)) {
-            onRemove(item.id);
-        }
-    };
-
-    // Circular timer calculations
-    const radius = 60;
-    const circumference = 2 * Math.PI * radius;
-    const strokeDashoffset = circumference - (timeLeft / period) * circumference;
-    const isLowTime = timeLeft <= 5;
-    const timerColor = isLowTime ? '#f44336' : (item.color || '#d32f2f');
-
     if (isEditing) {
         return (
             <div className="token-detail editing">
-                <h2>Editar Conta</h2>
-                <form onSubmit={handleEditSubmit} className="edit-form">
-                    <div className="form-group">
-                        <label>Emissor</label>
-                        <input
-                            type="text"
+                <Dialog
+                    open
+                    onClose={() => setIsEditing(false)}
+                    title="Editar Conta"
+                    description={item.account}
+                >
+                    <form onSubmit={handleEditSubmit} className="edit-form">
+                        <TextField
+                            label="Emissor"
                             value={editForm.issuer}
-                            onChange={(e) => setEditForm({...editForm, issuer: e.target.value})}
+                            onChange={(e) => setEditForm({ ...editForm, issuer: e.target.value })}
                             autoFocus
                         />
-                    </div>
-                    <div className="form-group">
-                        <label>Conta</label>
-                        <input
-                            type="text"
+                        <TextField
+                            label="Conta"
                             value={editForm.account}
-                            onChange={(e) => setEditForm({...editForm, account: e.target.value})}
+                            onChange={(e) => setEditForm({ ...editForm, account: e.target.value })}
                         />
-                    </div>
-
-                    <div className="form-group">
-                        <label>Categoria</label>
-                        <input
-                            type="text"
+                        <TextField
+                            label="Categoria"
+                            hint="ex: Trabalho, Pessoal"
                             value={editForm.category}
-                            onChange={(e) => setEditForm({...editForm, category: e.target.value})}
-                            placeholder="ex: Trabalho, Pessoal"
+                            onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
                         />
-                    </div>
-
-                    <div className="form-group">
-                        <label>Cor</label>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: '8px' }}>
-                            {COLORS.map(color => (
-                                <div
-                                    key={color}
-                                    onClick={() => setEditForm(prev => ({ ...prev, color }))}
-                                    style={{
-                                        backgroundColor: color,
-                                        width: '100%',
-                                        paddingTop: '100%',
-                                        borderRadius: '4px',
-                                        cursor: 'pointer',
-                                        border: editForm.color === color ? '2px solid white' : '1px solid transparent',
-                                        boxShadow: editForm.color === color ? '0 0 5px rgba(255,255,255,0.5)' : 'none'
-                                    }}
-                                />
-                            ))}
+                        <fieldset className="color-field">
+                            <legend>Cor</legend>
+                            <div className="color-grid">
+                                {COLORS.map(color => (
+                                    <button
+                                        key={color}
+                                        type="button"
+                                        aria-label={`Cor ${color}`}
+                                        aria-pressed={editForm.color === color}
+                                        onClick={() => setEditForm(prev => ({ ...prev, color }))}
+                                        className="color-swatch"
+                                        style={{ backgroundColor: color }}
+                                    />
+                                ))}
+                            </div>
+                        </fieldset>
+                        <div className="edit-actions">
+                            <Button type="submit" variant="primary">Salvar Alterações</Button>
+                            <Button type="button" variant="secondary" onClick={() => setIsEditing(false)}>Cancelar</Button>
                         </div>
-                    </div>
-
-                    <div className="edit-actions">
-                        <button type="submit" className="btn btn-primary">Salvar Alterações</button>
-                        <button type="button" className="btn btn-secondary" onClick={() => setIsEditing(false)}>Cancelar</button>
-                    </div>
-                </form>
+                    </form>
+                </Dialog>
             </div>
         );
     }
@@ -145,68 +122,52 @@ const TokenDetail: React.FC<TokenDetailProps> = ({ item, onUpdate, onRemove, mas
                     <IssuerIcon issuer={item.issuer} />
                 </div>
                 <div className="detail-info">
-                    <h1 className="detail-issuer">{item.issuer} {item.category ? `• ${item.category}` : ''}</h1>
+                    <h1 className="detail-issuer">
+                        {item.issuer}
+                        {item.category && <Badge tone="neutral">{item.category}</Badge>}
+                    </h1>
                     <h2 className="detail-account">{item.account}</h2>
                 </div>
             </div>
 
             <div className="detail-main">
                 <div className="big-token-container" onClick={copyToClipboard}>
-                    <span
-                        className="big-token"
+                    <TokenCode
+                        token={token}
+                        masked={maskSecrets && !isRevealed}
+                        onReveal={() => setIsRevealed(true)}
+                        size="lg"
+                    />
+                    <Button
+                        size="icon"
+                        variant="ghost"
+                        aria-label="Copiar código"
+                        iconStart="❐"
                         onClick={(e) => {
-                            if (maskSecrets && !isRevealed) {
-                                e.stopPropagation();
-                                setIsRevealed(true);
-                            }
+                            e.stopPropagation();
+                            copyToClipboard();
                         }}
-                    >
-                        {(!maskSecrets || isRevealed) ? token : (token.length > 7 ? '••••••••' : '••• •••')}
-                    </span>
-                    <button className="copy-btn" title="Copiar">
-                        {copied ? '✓' : '❐'}
-                    </button>
-                    {copied && <div className="detail-copied-toast">Copiado!</div>}
+                    />
                 </div>
 
-                <div className="big-timer">
-                    <svg width="140" height="140" viewBox="0 0 140 140">
-                        <circle
-                            stroke="rgba(255,255,255,0.05)"
-                            strokeWidth="8"
-                            fill="transparent"
-                            r={radius}
-                            cx="70"
-                            cy="70"
-                        />
-                        <circle
-                            stroke={timerColor}
-                            strokeWidth="8"
-                            fill="transparent"
-                            r={radius}
-                            cx="70"
-                            cy="70"
-                            style={{
-                                strokeDasharray: circumference,
-                                strokeDashoffset: strokeDashoffset,
-                                transition: 'stroke-dashoffset 1s linear, stroke 0.3s ease'
-                            }}
-                            transform="rotate(-90 70 70)"
-                        />
-                        <text x="50%" y="50%" textAnchor="middle" dy=".3em" fill="#fff" fontSize="24px" fontWeight="bold">
-                            {timeLeft}s
-                        </text>
-                    </svg>
-                </div>
+                <TokenRing timeLeft={timeLeft} period={period} size={140} thickness={8} showSeconds />
             </div>
 
             <div className="detail-actions">
-                <button className="btn btn-secondary" onClick={() => setIsEditing(true)}>
-                    ✎ Editar
-                </button>
-                <button className="btn btn-secondary delete-btn" onClick={handleDelete}>
+                <Button variant="secondary" iconStart="✎" onClick={() => setIsEditing(true)}>
+                    Editar
+                </Button>
+                <ConfirmButton
+                    appearance="inline"
+                    className="detail-remove"
+                    ask="Remover conta?"
+                    confirmLabel="Remover"
+                    cancelLabel="Cancelar"
+                    onConfirm={() => onRemove(item.id)}
+                    aria-label={`Remover ${item.account}`}
+                >
                     ✕ Remover
-                </button>
+                </ConfirmButton>
             </div>
         </div>
     );
