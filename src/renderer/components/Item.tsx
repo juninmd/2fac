@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { Badge, Button, ConfirmButton, Dialog, TextField, useToast } from '@juninmd/sonido';
 import { TwoFAItem } from '../types';
 import { useToken } from '../hooks/useToken';
 import { copyableCode } from '../utils/tokenUtils';
 import { COLORS } from '../constants';
 import IssuerIcon from './IssuerIcon';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { TokenCode, TokenRing } from './TokenCode';
 
 interface TwoFAItemProps {
     item: TwoFAItem;
@@ -21,7 +23,7 @@ interface TwoFAItemProps {
 
 const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, onMove, viewMode, isFirst, isLast, isDragEnabled, maskSecrets }) => {
     const { token, timeLeft, period } = useToken(item);
-    const [copied, setCopied] = useState(false);
+    const toast = useToast();
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState({ account: item.account, issuer: item.issuer, color: item.color ?? '#e23e3e' });
     const [isRevealed, setIsRevealed] = useState(false);
@@ -30,24 +32,13 @@ const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, onMove, view
         setIsRevealed(false);
     }, [token]);
 
-
     const copyToClipboard = () => {
         const rawToken = copyableCode(token);
         if (!rawToken) return;
         navigator.clipboard.writeText(rawToken).then(
-            () => {
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
-            },
+            () => toast({ title: 'Copiado!', description: `${item.issuer} • ${item.account}`, tone: 'success', duration: 2000 }),
             () => console.error('Falha ao copiar o código para a área de transferência'),
         );
-    };
-
-    const handleRemove = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (window.confirm(`Remover "${item.account}" de ${item.issuer}?`)) {
-            onRemove(item.id);
-        }
     };
 
     const handleEditSubmit = (e: React.FormEvent) => {
@@ -55,13 +46,6 @@ const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, onMove, view
         onUpdate(item.id, editForm);
         setIsEditing(false);
     };
-
-    // Circular timer calculations
-    const radius = 10;
-    const circumference = 2 * Math.PI * radius;
-    const strokeDashoffset = circumference - (timeLeft / period) * circumference;
-    const isLowTime = timeLeft <= 5;
-    const timerColor = isLowTime ? '#f44336' : '#d32f2f'; // Match primary color
 
     const itemColor = item.color || '#e23e3e';
 
@@ -88,54 +72,46 @@ const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, onMove, view
                 className={`item ${viewMode}-item editing`}
                 style={{ '--issuer-color': itemColor } as React.CSSProperties}
             >
-                <form onSubmit={handleEditSubmit} className="edit-form">
-                    <div className="form-group">
-                        <input
-                            type="text"
+                <Dialog
+                    open
+                    onClose={() => setIsEditing(false)}
+                    title="Editar conta"
+                    description={item.issuer}
+                >
+                    <form onSubmit={handleEditSubmit} className="edit-form">
+                        <TextField
+                            label="Emissor"
                             value={editForm.issuer}
-                            onChange={(e) => setEditForm({...editForm, issuer: e.target.value})}
-                            placeholder="Emissor"
+                            onChange={(e) => setEditForm({ ...editForm, issuer: e.target.value })}
                             autoFocus
                         />
-                    </div>
-                    <div className="form-group">
-                        <input
-                            type="text"
+                        <TextField
+                            label="Conta"
                             value={editForm.account}
-                            onChange={(e) => setEditForm({...editForm, account: e.target.value})}
-                            placeholder="Conta"
+                            onChange={(e) => setEditForm({ ...editForm, account: e.target.value })}
                         />
-                    </div>
-
-                    <div className="form-group">
-                        <label style={{fontSize: '0.8rem', color: '#aaa', marginBottom: '5px'}}>Cor</label>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: '3px' }}>
-                            {COLORS.map(color => (
-                                <button
-                                    key={color}
-                                    type="button"
-                                    aria-label={`Cor ${color}`}
-                                    aria-pressed={editForm.color === color}
-                                    onClick={() => setEditForm(prev => ({ ...prev, color }))}
-                                    style={{
-                                        backgroundColor: color,
-                                        width: '100%',
-                                        aspectRatio: '1 / 1',
-                                        padding: 0,
-                                        borderRadius: '2px',
-                                        cursor: 'pointer',
-                                        border: editForm.color === color ? '2px solid white' : '1px solid transparent',
-                                    }}
-                                />
-                            ))}
+                        <fieldset className="color-field">
+                            <legend>Cor</legend>
+                            <div className="color-grid">
+                                {COLORS.map(color => (
+                                    <button
+                                        key={color}
+                                        type="button"
+                                        aria-label={`Cor ${color}`}
+                                        aria-pressed={editForm.color === color}
+                                        onClick={() => setEditForm(prev => ({ ...prev, color }))}
+                                        className="color-swatch"
+                                        style={{ backgroundColor: color }}
+                                    />
+                                ))}
+                            </div>
+                        </fieldset>
+                        <div className="edit-actions">
+                            <Button type="submit" variant="primary" size="sm">Salvar</Button>
+                            <Button type="button" variant="secondary" size="sm" onClick={() => setIsEditing(false)}>Cancelar</Button>
                         </div>
-                    </div>
-
-                    <div className="edit-actions">
-                        <button type="submit" className="btn btn-primary btn-sm">Salvar</button>
-                        <button type="button" className="btn btn-secondary btn-sm" onClick={() => setIsEditing(false)}>Cancelar</button>
-                    </div>
-                </form>
+                    </form>
+                </Dialog>
             </div>
         );
     }
@@ -153,85 +129,63 @@ const Item: React.FC<TwoFAItemProps> = ({ item, onRemove, onUpdate, onMove, view
                 <IssuerIcon issuer={item.issuer} />
             </div>
             <div className="item-header">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span className="item-issuer">{item.issuer}</span>
-                </div>
+                <span className="item-issuer">{item.issuer}</span>
                 <h3 className="item-account" title={item.account}>{item.account}</h3>
+                {item.category && <Badge tone="neutral">{item.category}</Badge>}
             </div>
 
             <div className="token-display">
-                <span
-                    className="token"
-                    {...(maskSecrets && !isRevealed ? {
-                        role: 'button',
-                        tabIndex: 0,
-                        'aria-label': 'Mostrar código',
-                        onKeyDown: (e: React.KeyboardEvent) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setIsRevealed(true);
-                            }
-                        },
-                    } : {})}
-                    onClick={(e) => {
-                        if (maskSecrets && !isRevealed) {
-                            e.stopPropagation();
-                            setIsRevealed(true);
-                        }
-                    }}
-                    style={{ cursor: (maskSecrets && !isRevealed) ? 'pointer' : 'inherit' }}
-                >
-                    {(!maskSecrets || isRevealed) ? token : (token.length > 7 ? '••••••••' : '••• •••')}
-                </span>
-                <div className="circular-timer">
-                    <svg width="24" height="24" viewBox="0 0 24 24">
-                        <circle
-                            stroke="rgba(255,255,255,0.1)"
-                            strokeWidth="2"
-                            fill="transparent"
-                            r={radius}
-                            cx="12"
-                            cy="12"
-                        />
-                        <circle
-                            stroke={timerColor}
-                            strokeWidth="2"
-                            fill="transparent"
-                            r={radius}
-                            cx="12"
-                            cy="12"
-                            style={{
-                                strokeDasharray: circumference,
-                                strokeDashoffset: strokeDashoffset,
-                                transition: 'stroke-dashoffset 1s linear, stroke 0.3s ease'
-                            }}
-                            transform="rotate(-90 12 12)"
-                        />
-                    </svg>
-                </div>
+                <TokenCode
+                    token={token}
+                    masked={maskSecrets && !isRevealed}
+                    onReveal={() => setIsRevealed(true)}
+                />
+                <TokenRing timeLeft={timeLeft} period={period} />
             </div>
 
             <div className="item-actions">
                 {!isFirst && (
-                    <button className="btn-icon-small" onClick={(e) => { e.stopPropagation(); onMove(item.id, 'up'); }} title="Mover para Cima" aria-label="Mover para cima">
+                    <Button
+                        size="xs"
+                        variant="secondary"
+                        appearance="outline"
+                        onClick={(e) => { e.stopPropagation(); onMove(item.id, 'up'); }}
+                        aria-label="Mover para cima"
+                    >
                         ↑
-                    </button>
+                    </Button>
                 )}
                 {!isLast && (
-                    <button className="btn-icon-small" onClick={(e) => { e.stopPropagation(); onMove(item.id, 'down'); }} title="Mover para Baixo" aria-label="Mover para baixo">
+                    <Button
+                        size="xs"
+                        variant="secondary"
+                        appearance="outline"
+                        onClick={(e) => { e.stopPropagation(); onMove(item.id, 'down'); }}
+                        aria-label="Mover para baixo"
+                    >
                         ↓
-                    </button>
+                    </Button>
                 )}
-                <button className="btn-icon-small" onClick={(e) => { e.stopPropagation(); setIsEditing(true); }} title="Editar" aria-label={`Editar ${item.account}`}>
+                <Button
+                    size="xs"
+                    variant="ghost"
+                    onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
+                    aria-label={`Editar ${item.account}`}
+                >
                     ✎
-                </button>
-                <button className="btn-icon-small delete" onClick={handleRemove} title="Remover" aria-label={`Remover ${item.account}`}>
+                </Button>
+                <ConfirmButton
+                    appearance="inline"
+                    className="item-delete"
+                    ask="Remover?"
+                    confirmLabel="Remover"
+                    cancelLabel="Cancelar"
+                    onConfirm={() => onRemove(item.id)}
+                    aria-label={`Remover ${item.account}`}
+                >
                     ✕
-                </button>
+                </ConfirmButton>
             </div>
-
-            {copied && <div className="copied-overlay">Copiado!</div>}
         </div>
     );
 };

@@ -10,7 +10,22 @@ export default {
      '^.+\\.tsx?$': ['ts-jest', {
        tsconfig: 'tsconfig.json',
      }],
+     // O Sonido é publicado só como ESM; o ts-jest converte o bundle para CJS
+     // para o Jest (CommonJS) conseguir carregar os componentes de verdade.
+     '^.+\\.js$': ['ts-jest', {
+       tsconfig: {
+         allowJs: true,
+         module: 'CommonJS',
+         moduleResolution: 'node',
+         target: 'ES2020',
+         esModuleInterop: true,
+         jsx: 'react-jsx',
+         skipLibCheck: true,
+       },
+       diagnostics: false,
+     }],
    },
+   transformIgnorePatterns: ['/node_modules/(?!.*@juninmd/sonido)'],
    testMatch: [
      '**/src/renderer/**/*.test.{ts,tsx}',
      '**/src/main/**/*.test.ts'

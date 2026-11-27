@@ -60,7 +60,7 @@ describe('Settings', () => {
 
     expect(screen.getByText('Configurações')).toBeInTheDocument();
     expect(screen.getByLabelText('Minimizar para a bandeja ao fechar')).toBeInTheDocument();
-    expect(screen.getByText('Geral')).toHaveClass('active');
+    expect(screen.getByRole('tab', { name: 'Geral' })).toHaveAttribute('aria-selected', 'true');
   });
 
   it('updates minimizeToTray setting (General Tab)', async () => {
@@ -195,13 +195,12 @@ describe('Settings', () => {
       render(<Settings {...defaultProps} />);
       await waitFor(() => expect(mockGetSettings).toHaveBeenCalled());
 
-      // Try finding the close button (SVG or text)
-      // Since it's a button with title "Fechar", we can use getByTitle
-      fireEvent.click(screen.getByTitle('Fechar'));
+      // Header icon button and the footer button both say "Fechar".
+      const closeButtons = screen.getAllByRole('button', { name: 'Fechar' });
+      fireEvent.click(closeButtons[0]);
       expect(mockOnClose).toHaveBeenCalled();
 
-      // Also check the "Fechar" button at the bottom
-      fireEvent.click(screen.getByText('Fechar', { selector: 'button.btn-secondary' }));
+      fireEvent.click(closeButtons[1]);
       expect(mockOnClose).toHaveBeenCalledTimes(2);
   });
 

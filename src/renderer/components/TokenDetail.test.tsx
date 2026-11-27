@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { ToastProvider } from '@juninmd/sonido';
 import TokenDetail from './TokenDetail';
 import { TwoFAItem } from '../types';
 
@@ -24,6 +25,20 @@ describe('TokenDetail', () => {
   const mockOnUpdate = jest.fn();
   const mockOnRemove = jest.fn();
 
+  type DetailProps = React.ComponentProps<typeof TokenDetail>;
+  const baseProps: DetailProps = {
+    item: mockItem,
+    onUpdate: mockOnUpdate,
+    onRemove: mockOnRemove,
+    maskSecrets: false,
+  };
+
+  const renderDetail = (overrides: Partial<DetailProps> = {}) => render(
+    <ToastProvider>
+      <TokenDetail {...baseProps} {...overrides} />
+    </ToastProvider>
+  );
+
   beforeAll(() => {
     Object.assign(navigator, {
       clipboard: {
@@ -42,31 +57,27 @@ describe('TokenDetail', () => {
   });
 
   it('renders details', () => {
-    render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={false} />);
+    renderDetail();
 
     expect(screen.getByText('Google')).toBeInTheDocument();
     expect(screen.getByText('test@example.com')).toBeInTheDocument();
-    expect(screen.getByText('123 456')).toBeInTheDocument();
+    expect(screen.getByLabelText('123 456')).toBeInTheDocument();
     expect(screen.getByText('15s')).toBeInTheDocument();
   });
 
   it('copies token to clipboard', async () => {
-    render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={false} />);
+    renderDetail();
 
-    fireEvent.click(screen.getByText('123 456'));
+    fireEvent.click(screen.getByLabelText('123 456'));
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith('123456');
-    expect(screen.getByText('Copiado!')).toBeInTheDocument();
-
-    await waitFor(() => {
-        expect(screen.queryByText('Copiado!')).not.toBeInTheDocument();
-    }, { timeout: 3000 });
+    expect(await screen.findByText('Copiado!')).toBeInTheDocument();
   });
 
   it('enters edit mode and updates issuer and account', () => {
-    render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={false} />);
+    renderDetail();
 
-    fireEvent.click(screen.getByText('✎ Editar'));
+    fireEvent.click(screen.getByText('Editar'));
 
     expect(screen.getByText('Editar Conta')).toBeInTheDocument();
 
@@ -85,9 +96,9 @@ describe('TokenDetail', () => {
   });
 
   it('cancels edit mode', () => {
-    render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={false} />);
+    renderDetail();
 
-    fireEvent.click(screen.getByText('✎ Editar'));
+    fireEvent.click(screen.getByText('Editar'));
     fireEvent.click(screen.getByText('Cancelar'));
 
     expect(screen.queryByText('Editar Conta')).not.toBeInTheDocument();
@@ -95,36 +106,37 @@ describe('TokenDetail', () => {
   });
 
   it('handles delete', () => {
-      const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
-      render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={false} />);
+      renderDetail();
 
-      fireEvent.click(screen.getByText('✕ Remover'));
+      fireEvent.click(screen.getByLabelText('Remover test@example.com'));
+      fireEvent.click(screen.getByText('Remover'));
 
-      expect(confirmSpy).toHaveBeenCalled();
       expect(mockOnRemove).toHaveBeenCalledWith('1');
-      confirmSpy.mockRestore();
   });
 
   it('cancels delete', () => {
-      const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(false);
-      render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={false} />);
+      renderDetail();
 
-      fireEvent.click(screen.getByText('✕ Remover'));
+      fireEvent.click(screen.getByLabelText('Remover test@example.com'));
+      fireEvent.click(screen.getByText('Cancelar'));
 
       expect(mockOnRemove).not.toHaveBeenCalled();
-      confirmSpy.mockRestore();
   });
 
   it('updates state when item prop changes', () => {
-      const { rerender } = render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={false} />);
+      const { rerender } = renderDetail();
 
       const newItem = { ...mockItem, issuer: 'New Issuer' };
-      rerender(<TokenDetail item={newItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={false} />);
+      rerender(
+        <ToastProvider>
+          <TokenDetail {...baseProps} item={newItem} />
+        </ToastProvider>
+      );
 
       expect(screen.getByText('New Issuer')).toBeInTheDocument();
 
       // Also check if edit form state updated by entering edit mode
-      fireEvent.click(screen.getByText('✎ Editar'));
+      fireEvent.click(screen.getByText('Editar'));
       expect(screen.getByDisplayValue('New Issuer')).toBeInTheDocument();
   });
 
@@ -134,27 +146,25 @@ describe('TokenDetail', () => {
           timeLeft: 5,
           period: 30
       });
-      render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={false} />);
+      const { container } = renderDetail();
 
       expect(screen.getByText('5s')).toBeInTheDocument();
+      expect(container.querySelector('.token-ring--low')).toBeInTheDocument();
   });
 
   it('renders default icon/color if missing', () => {
-      const itemNoColor = { ...mockItem, color: undefined, issuer: '' };
-      render(<TokenDetail item={itemNoColor} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={false} />);
+      renderDetail({ item: { ...mockItem, color: undefined, issuer: '' } });
 
       expect(screen.getByText('?')).toBeInTheDocument();
   });
 
   it('changes color in edit mode', () => {
-        render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={false} />);
+        const { container } = renderDetail();
 
-        fireEvent.click(screen.getByText('✎ Editar'));
+        fireEvent.click(screen.getByText('Editar'));
 
-        const colorLabel = screen.getByText('Cor');
-        const grid = colorLabel.nextElementSibling;
-        const colorDivs = grid?.children;
-        fireEvent.click(colorDivs![1]); // Click 2nd color
+        const grid = container.querySelector('.color-grid');
+        fireEvent.click(grid!.children[1]); // Click 2nd color
 
         fireEvent.click(screen.getByText('Salvar Alterações'));
 
@@ -164,7 +174,7 @@ describe('TokenDetail', () => {
     });
 
     it('copies token on Ctrl+C', () => {
-        render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={false} />);
+        renderDetail();
 
         fireEvent.keyDown(window, { key: 'c', ctrlKey: true });
 
@@ -173,10 +183,10 @@ describe('TokenDetail', () => {
     });
 
     it('does not copy on Ctrl+C if editing', () => {
-        render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={false} />);
+        renderDetail();
 
         // Enter edit mode
-        fireEvent.click(screen.getByText('✎ Editar'));
+        fireEvent.click(screen.getByText('Editar'));
 
         // Clear mocks
         (navigator.clipboard.writeText as jest.Mock).mockClear();
@@ -197,18 +207,27 @@ describe('TokenDetail', () => {
     const mockOnRemove = jest.fn();
     const mockOnUpdate = jest.fn();
     it('masks and unmasks secrets based on maskSecrets prop', () => {
-        const { rerender } = render(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={true} />);
+        const props = { item: mockItem, onUpdate: mockOnUpdate, onRemove: mockOnRemove };
+        const { rerender } = render(
+          <ToastProvider>
+            <TokenDetail {...props} maskSecrets />
+          </ToastProvider>
+        );
 
         // By default should be masked
         expect(screen.getByText('••• •••')).toBeInTheDocument();
 
         // Click to unmask
         fireEvent.click(screen.getByText('••• •••'));
-        expect(screen.getByText('123 456')).toBeInTheDocument();
+        expect(screen.getByLabelText('123 456')).toBeInTheDocument();
 
         // Re-render with maskSecrets false
-        rerender(<TokenDetail item={mockItem} onUpdate={mockOnUpdate} onRemove={mockOnRemove} maskSecrets={false} />);
+        rerender(
+          <ToastProvider>
+            <TokenDetail {...props} maskSecrets={false} />
+          </ToastProvider>
+        );
 
-        expect(screen.getByText('123 456')).toBeInTheDocument();
+        expect(screen.getByLabelText('123 456')).toBeInTheDocument();
     });
 });

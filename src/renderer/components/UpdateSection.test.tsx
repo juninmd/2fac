@@ -30,7 +30,7 @@ describe('UpdateSection', () => {
         await screen.findByText(/Versão atual/);
         act(() => push({ state: 'downloading', version: '2.0.0', percent: 40 }));
         expect(screen.getByRole('status')).toHaveTextContent('40%');
-        expect(screen.getByText('Verificar atualizações')).toBeDisabled();
+        expect(screen.getByRole('button', { name: 'Verificar atualizações' })).toBeDisabled();
 
         act(() => push({ state: 'downloaded', version: '2.0.0' }));
         fireEvent.click(screen.getByText('Reiniciar e atualizar'));
@@ -62,7 +62,7 @@ describe('UpdateBanner', () => {
         expect(container).toBeEmptyDOMElement();
 
         act(() => push({ state: 'downloading', version: '2.0.0', percent: 10 }));
-        expect(screen.getByRole('status')).toHaveTextContent('Baixando atualização 2.0.0');
+        expect(screen.getByText('Baixando atualização 2.0.0…')).toBeInTheDocument();
 
         act(() => push({ state: 'downloaded', version: '2.0.0' }));
         fireEvent.click(screen.getByText('Reiniciar e atualizar'));

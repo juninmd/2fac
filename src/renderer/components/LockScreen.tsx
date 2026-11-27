@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Button, Spinner, TextField } from '@juninmd/sonido';
 import './LockScreen.css';
 
 interface LockScreenProps {
@@ -44,40 +45,40 @@ const LockScreen: React.FC<LockScreenProps> = ({ onUnlock }) => {
         }
     };
 
-    if (loading) return <div className="lock-screen">Carregando...</div>;
+    if (loading) return <div className="lock-screen"><Spinner size={28} label="Carregando..." /></div>;
 
     return (
         <div className="lock-screen">
             <div className="lock-container">
-                <div className="lock-icon">🔐</div>
+                <div className="lock-icon" aria-hidden>🔐</div>
                 <h2>{isSetup ? 'Configurar Senha Mestre' : 'Desbloquear 2FAC'}</h2>
                 <p>{isSetup ? 'Crie uma senha para proteger seus tokens' : 'Digite sua senha para acessar'}</p>
 
-                <form onSubmit={handleUnlock}>
-                    <input
+                <form onSubmit={handleUnlock} className="lock-form">
+                    <TextField
+                        label="Senha"
                         type="password"
                         placeholder="Senha"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="lock-input"
                         autoFocus
                     />
 
                     {isSetup && (
-                        <input
+                        <TextField
+                            label="Confirmar Senha"
                             type="password"
                             placeholder="Confirmar Senha"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
-                            className="lock-input"
                         />
                     )}
 
-                    {error && <div className="lock-error">{error}</div>}
+                    {error && <div className="lock-error" role="alert">{error}</div>}
 
-                    <button type="submit" className="lock-button">
+                    <Button type="submit" variant="primary" size="lg" className="full-width">
                         {isSetup ? 'Criar Senha' : 'Desbloquear'}
-                    </button>
+                    </Button>
                 </form>
             </div>
         </div>

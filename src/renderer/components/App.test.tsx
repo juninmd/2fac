@@ -1,7 +1,14 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { ToastProvider } from '@juninmd/sonido';
 import App from './App';
 import { TwoFAItem } from '../types';
+
+const renderApp = () => render(
+  <ToastProvider>
+    <App />
+  </ToastProvider>
+);
 
 // Mock utils
 jest.mock('../utils/arrayUtils', () => ({
@@ -153,7 +160,7 @@ describe('App', () => {
 
   // Basic Render Tests
   it('starts locked and unlocks', async () => {
-    render(<App />);
+    renderApp();
     expect(screen.getByTestId('lock-screen')).toBeInTheDocument();
     fireEvent.click(screen.getByText('Unlock'));
     await waitFor(() => {
@@ -163,7 +170,7 @@ describe('App', () => {
   });
 
   it('handles item removal', async () => {
-    render(<App />);
+    renderApp();
     fireEvent.click(screen.getByText('Unlock'));
     await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
@@ -178,7 +185,7 @@ describe('App', () => {
     mockRemove2FAItem.mockRejectedValue(new Error('Failed'));
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-    render(<App />);
+    renderApp();
     fireEvent.click(screen.getByText('Unlock'));
     await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
@@ -193,7 +200,7 @@ describe('App', () => {
 
   it('handles item update', async () => {
     mockUpdate2FAItem.mockResolvedValue({ ...mockItems[0], account: 'Updated' });
-    render(<App />);
+    renderApp();
     fireEvent.click(screen.getByText('Unlock'));
     await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
@@ -208,7 +215,7 @@ describe('App', () => {
     mockUpdate2FAItem.mockRejectedValue(new Error('Failed'));
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-    render(<App />);
+    renderApp();
     fireEvent.click(screen.getByText('Unlock'));
     await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
@@ -222,7 +229,7 @@ describe('App', () => {
   });
 
   it('handles manual move (up/down)', async () => {
-    render(<App />);
+    renderApp();
     fireEvent.click(screen.getByText('Unlock'));
     await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
@@ -248,7 +255,7 @@ describe('App', () => {
   });
 
   it('handles manual move edges', async () => {
-    render(<App />);
+    renderApp();
     fireEvent.click(screen.getByText('Unlock'));
     await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
@@ -262,7 +269,7 @@ describe('App', () => {
   });
 
   it('handles drag end reorder', async () => {
-     render(<App />);
+     renderApp();
      fireEvent.click(screen.getByText('Unlock'));
      await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
@@ -277,7 +284,7 @@ describe('App', () => {
      mockSet2FAItems.mockRejectedValue(new Error('Fail'));
      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-     render(<App />);
+     renderApp();
      fireEvent.click(screen.getByText('Unlock'));
      await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
@@ -290,7 +297,7 @@ describe('App', () => {
   });
 
     it('handles drag end same item', async () => {
-     render(<App />);
+     renderApp();
      fireEvent.click(screen.getByText('Unlock'));
      await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
@@ -308,7 +315,7 @@ describe('App', () => {
         autoLockTimeout: 1, // 1 minute
       });
 
-      render(<App />);
+      renderApp();
       fireEvent.click(screen.getByText('Unlock'));
       await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
@@ -328,7 +335,7 @@ describe('App', () => {
         autoLockTimeout: 1,
       });
 
-      render(<App />);
+      renderApp();
       fireEvent.click(screen.getByText('Unlock'));
       await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
@@ -366,7 +373,7 @@ describe('App', () => {
       jest.useFakeTimers();
       mockGetSettings.mockResolvedValue({ autoLock: true, autoLockTimeout: 1 });
 
-      render(<App />);
+      renderApp();
       fireEvent.click(screen.getByText('Unlock'));
       await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
@@ -378,91 +385,81 @@ describe('App', () => {
       jest.useRealTimers();
   });
 
-  it('handles failed export', async () => {
-      window.alert = jest.fn();
-      mockExport2FA.mockRejectedValue(new Error('Export failed'));
+  it('handles failed export', async () => {      mockExport2FA.mockRejectedValue(new Error('Export failed'));
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-      render(<App />);
+      renderApp();
       fireEvent.click(screen.getByText('Unlock'));
       await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
-      fireEvent.click(screen.getByTitle('Configurações'));
+      fireEvent.click(screen.getByLabelText('Configurações'));
       fireEvent.click(screen.getByText('📥 Exportar JSON'));
 
       await waitFor(() => {
-          expect(window.alert).toHaveBeenCalledWith('Erro ao exportar');
+          expect(screen.getByText('Erro ao exportar')).toBeInTheDocument();
           expect(consoleSpy).toHaveBeenCalled();
       });
       consoleSpy.mockRestore();
   });
 
-  it('handles failed import', async () => {
-      window.alert = jest.fn();
-      mockImport2FA.mockRejectedValue(new Error('Import failed'));
+  it('handles failed import', async () => {      mockImport2FA.mockRejectedValue(new Error('Import failed'));
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-      render(<App />);
+      renderApp();
       fireEvent.click(screen.getByText('Unlock'));
       await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
-      fireEvent.click(screen.getByTitle('Configurações'));
+      fireEvent.click(screen.getByLabelText('Configurações'));
       fireEvent.click(screen.getByText('📤 Importar JSON'));
 
       await waitFor(() => {
-          expect(window.alert).toHaveBeenCalledWith('Erro ao importar');
+          expect(screen.getByText('Erro ao importar')).toBeInTheDocument();
           expect(consoleSpy).toHaveBeenCalled();
       });
       consoleSpy.mockRestore();
   });
 
-    it('handles authy import success', async () => {
-        window.alert = jest.fn();
-        mockImportAuthy.mockResolvedValue({ success: true, count: 10 });
+    it('handles authy import success', async () => {        mockImportAuthy.mockResolvedValue({ success: true, count: 10 });
 
-        render(<App />);
+        renderApp();
         fireEvent.click(screen.getByText('Unlock'));
         await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
-        fireEvent.click(screen.getByTitle('Configurações'));
+        fireEvent.click(screen.getByLabelText('Configurações'));
         fireEvent.click(screen.getByText('📱 Importar do Authy / URIs'));
 
         await waitFor(() => {
             expect(mockImportAuthy).toHaveBeenCalled();
-            expect(window.alert).toHaveBeenCalledWith('10 itens Authy importados com sucesso!');
+            expect(screen.getByText('10 itens Authy importados com sucesso!')).toBeInTheDocument();
         });
     });
 
-    it('handles authy import failure', async () => {
-        window.alert = jest.fn();
-        mockImportAuthy.mockResolvedValue({ success: false, error: 'File invalid' });
+    it('handles authy import failure', async () => {        mockImportAuthy.mockResolvedValue({ success: false, error: 'File invalid' });
 
-        render(<App />);
+        renderApp();
         fireEvent.click(screen.getByText('Unlock'));
         await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
-        fireEvent.click(screen.getByTitle('Configurações'));
+        fireEvent.click(screen.getByLabelText('Configurações'));
         fireEvent.click(screen.getByText('📱 Importar do Authy / URIs'));
 
         await waitFor(() => {
-            expect(window.alert).toHaveBeenCalledWith('Erro ao importar: File invalid');
+            expect(screen.getByText('File invalid')).toBeInTheDocument();
         });
     });
 
-    it('handles authy import exception', async () => {
-        window.alert = jest.fn();
-        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    it('handles authy import exception', async () => {        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
         mockImportAuthy.mockRejectedValue(new Error('Crash'));
 
-        render(<App />);
+        renderApp();
         fireEvent.click(screen.getByText('Unlock'));
         await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
-        fireEvent.click(screen.getByTitle('Configurações'));
+        fireEvent.click(screen.getByLabelText('Configurações'));
         fireEvent.click(screen.getByText('📱 Importar do Authy / URIs'));
 
         await waitFor(() => {
-            expect(window.alert).toHaveBeenCalledWith('Erro ao importar Authy');
+            expect(screen.getByText('Erro ao importar Authy')).toBeInTheDocument();
         });
         consoleSpy.mockRestore();
     });
@@ -471,7 +468,7 @@ describe('App', () => {
         mockGet2FAItems.mockRejectedValue(new Error('Load failed'));
         const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-        render(<App />);
+        renderApp();
         fireEvent.click(screen.getByText('Unlock'));
 
         await waitFor(() => {
@@ -484,11 +481,11 @@ describe('App', () => {
         mockAdd2FAItem.mockRejectedValue(new Error('Add failed'));
         const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-        render(<App />);
+        renderApp();
         fireEvent.click(screen.getByText('Unlock'));
         await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
-        fireEvent.click(screen.getByTitle('Adicionar Conta'));
+        fireEvent.click(screen.getByLabelText('Adicionar Conta'));
         fireEvent.click(screen.getByText('Add'));
 
         await waitFor(() => {
@@ -498,80 +495,72 @@ describe('App', () => {
     });
 
     it('handles encrypted export failure', async () => {
-        window.prompt = jest.fn().mockReturnValue('password');
-        window.alert = jest.fn();
-        mockExport2FAEncrypted.mockResolvedValue({ success: false, error: 'Crypt Error' });
+        window.prompt = jest.fn().mockReturnValue('password');        mockExport2FAEncrypted.mockResolvedValue({ success: false, error: 'Crypt Error' });
 
-        render(<App />);
+        renderApp();
         fireEvent.click(screen.getByText('Unlock'));
         await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
-        fireEvent.click(screen.getByTitle('Configurações'));
+        fireEvent.click(screen.getByLabelText('Configurações'));
         fireEvent.click(screen.getByText('🔒 Exportar Backup'));
 
         await waitFor(() => {
-            expect(window.alert).toHaveBeenCalledWith('Erro ao exportar: Crypt Error');
+            expect(screen.getByText('Crypt Error')).toBeInTheDocument();
         });
     });
 
     it('handles encrypted export exception', async () => {
-        window.prompt = jest.fn().mockReturnValue('password');
-        window.alert = jest.fn();
-        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        window.prompt = jest.fn().mockReturnValue('password');        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
         mockExport2FAEncrypted.mockRejectedValue(new Error('Export Crash'));
 
-        render(<App />);
+        renderApp();
         fireEvent.click(screen.getByText('Unlock'));
         await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
-        fireEvent.click(screen.getByTitle('Configurações'));
+        fireEvent.click(screen.getByLabelText('Configurações'));
         fireEvent.click(screen.getByText('🔒 Exportar Backup'));
 
         await waitFor(() => {
-            expect(window.alert).toHaveBeenCalledWith('Erro ao exportar');
+            expect(screen.getByText('Erro ao exportar')).toBeInTheDocument();
         });
         consoleSpy.mockRestore();
     });
 
     it('handles encrypted import failure', async () => {
-        window.prompt = jest.fn().mockReturnValue('password');
-        window.alert = jest.fn();
-        mockImport2FAEncrypted.mockResolvedValue({ success: false, error: 'Crypt Error' });
+        window.prompt = jest.fn().mockReturnValue('password');        mockImport2FAEncrypted.mockResolvedValue({ success: false, error: 'Crypt Error' });
 
-        render(<App />);
+        renderApp();
         fireEvent.click(screen.getByText('Unlock'));
         await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
-        fireEvent.click(screen.getByTitle('Configurações'));
+        fireEvent.click(screen.getByLabelText('Configurações'));
         fireEvent.click(screen.getByText('🔓 Restaurar Backup'));
 
         await waitFor(() => {
-            expect(window.alert).toHaveBeenCalledWith('Erro ao importar: Crypt Error');
+            expect(screen.getByText('Crypt Error')).toBeInTheDocument();
         });
     });
 
     it('handles encrypted import exception', async () => {
-        window.prompt = jest.fn().mockReturnValue('password');
-        window.alert = jest.fn();
-        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        window.prompt = jest.fn().mockReturnValue('password');        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
         mockImport2FAEncrypted.mockRejectedValue(new Error('Import Crash'));
 
-        render(<App />);
+        renderApp();
         fireEvent.click(screen.getByText('Unlock'));
         await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
-        fireEvent.click(screen.getByTitle('Configurações'));
+        fireEvent.click(screen.getByLabelText('Configurações'));
         fireEvent.click(screen.getByText('🔓 Restaurar Backup'));
 
         await waitFor(() => {
-            expect(window.alert).toHaveBeenCalledWith('Erro ao importar');
+            expect(screen.getByText('Erro ao importar')).toBeInTheDocument();
         });
         consoleSpy.mockRestore();
     });
 
     it('renders empty state when no items', async () => {
         mockGet2FAItems.mockResolvedValue([]);
-        render(<App />);
+        renderApp();
         fireEvent.click(screen.getByText('Unlock'));
 
         await waitFor(() => {
@@ -581,7 +570,7 @@ describe('App', () => {
     });
 
     it('renders filtered empty state', async () => {
-        render(<App />);
+        renderApp();
         fireEvent.click(screen.getByText('Unlock'));
         await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
@@ -592,12 +581,12 @@ describe('App', () => {
     });
 
     it('renders list view with selection', async () => {
-        render(<App />);
+        renderApp();
         fireEvent.click(screen.getByText('Unlock'));
         await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
         // Switch to list view
-        fireEvent.click(screen.getByTitle('Ver em Lista'));
+        fireEvent.click(screen.getByLabelText('Ver em Lista'));
 
         await waitFor(() => {
             expect(screen.getByTestId('sidebar-list')).toBeInTheDocument();
@@ -609,12 +598,12 @@ describe('App', () => {
     });
 
     it('handles keyboard navigation in list view', async () => {
-        render(<App />);
+        renderApp();
         fireEvent.click(screen.getByText('Unlock'));
         await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
         // Switch to list view
-        fireEvent.click(screen.getByTitle('Ver em Lista'));
+        fireEvent.click(screen.getByLabelText('Ver em Lista'));
 
         await waitFor(() => {
             expect(screen.getByTestId('sidebar-list')).toBeInTheDocument();
@@ -639,7 +628,7 @@ describe('App', () => {
     });
 
     it('handles global shortcuts', async () => {
-        render(<App />);
+        renderApp();
         fireEvent.click(screen.getByText('Unlock'));
         await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
@@ -662,7 +651,7 @@ describe('App', () => {
     });
 
     it('handles more global shortcuts', async () => {
-        render(<App />);
+        renderApp();
         fireEvent.click(screen.getByText('Unlock'));
         await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
@@ -701,7 +690,7 @@ describe('App', () => {
             blurOnInactive: true,
         });
 
-        render(<App />);
+        renderApp();
         fireEvent.click(screen.getByText('Unlock'));
         await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
@@ -722,12 +711,12 @@ describe('App', () => {
     });
 
     it('handles ArrowDown when no item is selected', async () => {
-        render(<App />);
+        renderApp();
         fireEvent.click(screen.getByText('Unlock'));
         await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 
         // Select item in sidebar to make sure one is selected
-        fireEvent.click(screen.getByTitle('Ver em Lista'));
+        fireEvent.click(screen.getByLabelText('Ver em Lista'));
         await waitFor(() => expect(screen.getByTestId('sidebar-list')).toBeInTheDocument());
 
         // Go to bottom of list
@@ -749,7 +738,7 @@ describe('App', () => {
     });
 
     it('handles drag end with missing index', async () => {
-      render(<App />);
+      renderApp();
       fireEvent.click(screen.getByText('Unlock'));
       await waitFor(() => expect(screen.getByTestId('item-list')).toBeInTheDocument());
 

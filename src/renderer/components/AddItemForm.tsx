@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import * as OTPAuth from 'otpauth';
+import { Button, Select, TextField, useToast } from '@juninmd/sonido';
 import { TwoFAItem } from '../types';
 import { COLORS } from '../constants';
 import { getBrandColor } from '../utils/brandUtils';
@@ -11,6 +12,7 @@ interface AddItemFormProps {
 }
 
 const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd, initialUri }) => {
+    const toast = useToast();
     const [isScanning, setIsScanning] = useState(false);
     const [formData, setFormData] = useState({
         account: '',
@@ -117,7 +119,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd, initialUri }) => {
         setErrors({});
     };
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
 
         if (name === 'secret' && value.startsWith('otpauth://')) {
@@ -158,6 +160,10 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd, initialUri }) => {
         }
     };
 
+    const updateField = (field: 'algorithm' | 'digits' | 'period' | 'encoding', value: string) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
     const handleScanQR = async () => {
         setIsScanning(true);
         try {
@@ -168,30 +174,34 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd, initialUri }) => {
                     const secret = parsed.secret?.base32 ?? '';
 
                     if (parsed && secret) {
-                    setFormData(prev => ({
-                        ...prev,
-                        account: parsed.label || prev.account,
-                        issuer: parsed.issuer || prev.issuer,
-                        secret,
-                        algorithm: (parsed.algorithm || 'SHA1'),
-                        digits: (parsed.digits || 6).toString(),
-                        period: (parsed instanceof OTPAuth.TOTP ? parsed.period : 30).toString(),
-                        encoding: 'base32',
-                        type: 'totp'
-                    }));
-                         setErrors({});
+                        setFormData(prev => ({
+                            ...prev,
+                            account: parsed.label || prev.account,
+                            issuer: parsed.issuer || prev.issuer,
+                            secret,
+                            algorithm: (parsed.algorithm || 'SHA1'),
+                            digits: (parsed.digits || 6).toString(),
+                            period: (parsed instanceof OTPAuth.TOTP ? parsed.period : 30).toString(),
+                            encoding: 'base32',
+                            type: 'totp'
+                        }));
+                        setErrors({});
                     } else {
-                        alert('QR Code não contém dados válidos de 2FA.');
+                        toast({ title: 'QR Code não contém dados válidos de 2FA.', tone: 'danger' });
                     }
-                } catch (e) {
-                    alert('QR Code inválido ou não suportado.');
+                } catch {
+                    toast({ title: 'QR Code inválido ou não suportado.', tone: 'danger' });
                 }
             } else {
-                alert(result.error || 'QR Code não encontrado na tela. Certifique-se que o código está visível.');
+                toast({
+                    title: 'QR Code não encontrado',
+                    description: result.error || 'Certifique-se que o código está visível na tela.',
+                    tone: 'danger',
+                });
             }
         } catch (error) {
             console.error(error);
-            alert('Erro ao escanear.');
+            toast({ title: 'Erro ao escanear.', tone: 'danger' });
         } finally {
             setIsScanning(false);
         }
@@ -199,183 +209,147 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ onAdd, initialUri }) => {
 
     return (
         <form className="add-item-form" onSubmit={handleSubmit}>
-            <button
+            <Button
                 type="button"
-                className="btn btn-primary full-width"
+                variant="primary"
+                size="lg"
+                className="full-width"
                 onClick={handleScanQR}
-                disabled={isScanning}
-                style={{ marginBottom: '24px', height: '48px', fontSize: '15px' }}
+                loading={isScanning}
+                iconStart="📷"
             >
-                {isScanning ? 'Procurando QR Code...' : '📷 Escanear QR da Tela'}
-            </button>
+                {isScanning ? 'Procurando QR Code...' : 'Escanear QR da Tela'}
+            </Button>
 
-            <div className="form-separator" style={{
-                textAlign: 'center',
-                borderBottom: '1px solid var(--border-color)',
-                lineHeight: '0.1em',
-                margin: '10px 0 20px',
-                color: 'var(--text-secondary)'
-            }}>
-                <span style={{ background: 'var(--bg-surface)', padding: '0 10px' }}>OU MANUALMENTE</span>
+            <div className="form-separator">
+                <span>OU MANUALMENTE</span>
             </div>
 
-            <div className="form-group">
-                <label htmlFor="account">Nome da Conta *</label>
-                <input
-                    type="text"
-                    id="account"
-                    name="account"
-                    value={formData.account}
-                    onChange={handleChange}
-                    placeholder="ex: seu_email@gmail.com"
-                    className={errors.account ? 'error' : ''}
-                />
-                {errors.account && <span className="error-message">{errors.account}</span>}
-            </div>
+            <TextField
+                label="Nome da Conta *"
+                name="account"
+                value={formData.account}
+                onChange={handleChange}
+                placeholder="ex: seu_email@gmail.com"
+                error={errors.account || undefined}
+            />
 
-            <div className="form-group">
-                <label htmlFor="issuer">Emissor (Serviço) *</label>
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    <div style={{
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '8px',
-                        backgroundColor: formData.color,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
-                        flexShrink: 0,
-                        fontSize: '1.2rem',
-                        fontWeight: 'bold',
-                        transition: 'background-color 0.2s',
-                        border: '1px solid var(--border-color)'
-                    }}>
+            <TextField
+                label="Emissor (Serviço) *"
+                name="issuer"
+                value={formData.issuer}
+                onChange={handleChange}
+                placeholder="ex: Google, GitHub"
+                error={errors.issuer || undefined}
+                icon={
+                    <span className="issuer-preview" style={{ backgroundColor: formData.color }}>
                         <IssuerIcon issuer={formData.issuer} />
-                    </div>
-                    <input
-                        type="text"
-                        id="issuer"
-                        name="issuer"
-                        value={formData.issuer}
-                        onChange={handleChange}
-                        placeholder="ex: Google, GitHub"
-                        className={errors.issuer ? 'error' : ''}
-                        style={{ flex: 1 }}
-                    />
-                </div>
-                {errors.issuer && <span className="error-message">{errors.issuer}</span>}
-            </div>
+                    </span>
+                }
+            />
 
-            <div className="form-group">
-                <label htmlFor="secret">Chave Secreta (Secret Key) *</label>
-                <input
-                    type="text"
-                    id="secret"
-                    name="secret"
-                    value={formData.secret}
-                    onChange={handleChange}
-                    placeholder="Cole aqui sua chave secreta"
-                    className={errors.secret ? 'error' : ''}
-                />
-                {errors.secret && <span className="error-message">{errors.secret}</span>}
-            </div>
+            <TextField
+                label="Chave Secreta (Secret Key) *"
+                name="secret"
+                value={formData.secret}
+                onChange={handleChange}
+                placeholder="Cole aqui sua chave secreta"
+                error={errors.secret || undefined}
+            />
 
-            <div className="form-group">
-                <label htmlFor="category">Categoria (opcional)</label>
-                <input
-                    type="text"
-                    id="category"
-                    name="category"
-                    value={formData.category}
-                    onChange={handleChange}
-                    placeholder="ex: Trabalho, Pessoal"
-                    list="category-suggestions"
-                />
-                <datalist id="category-suggestions">
-                    <option value="Trabalho" />
-                    <option value="Pessoal" />
-                    <option value="Social" />
-                    <option value="Finanças" />
-                    <option value="Jogos" />
-                </datalist>
-            </div>
+            <TextField
+                label="Categoria (opcional)"
+                name="category"
+                value={formData.category}
+                onChange={handleChange}
+                placeholder="ex: Trabalho, Pessoal"
+                list="category-suggestions"
+            />
+            <datalist id="category-suggestions">
+                <option value="Trabalho" />
+                <option value="Pessoal" />
+                <option value="Social" />
+                <option value="Finanças" />
+                <option value="Jogos" />
+            </datalist>
 
-            <div className="form-group">
-                <label htmlFor="description">Descrição (opcional)</label>
-                <textarea
-                    id="description"
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    placeholder="Notas sobre esta conta"
-                    rows={2}
-                />
-            </div>
+            <TextField
+                label="Descrição (opcional)"
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                placeholder="Notas sobre esta conta"
+                multiline
+                rows={2}
+            />
 
-            <div className="form-group">
-                <label>Cor do Ícone</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: '5px' }}>
+            <fieldset className="color-field">
+                <legend>Cor do Ícone</legend>
+                <div className="color-grid">
                     {COLORS.map(color => (
-                        <div
+                        <button
                             key={color}
+                            type="button"
+                            aria-label={`Cor ${color}`}
+                            aria-pressed={formData.color === color}
+                            className="color-swatch"
                             onClick={() => setFormData(prev => ({ ...prev, color }))}
-                            style={{
-                                backgroundColor: color,
-                                width: '100%',
-                                paddingTop: '100%', // Aspect ratio 1:1
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                border: formData.color === color ? '2px solid white' : '2px solid transparent',
-                                position: 'relative'
-                            }}
+                            style={{ backgroundColor: color }}
                         />
                     ))}
                 </div>
+            </fieldset>
+
+            <div className="form-row">
+                <Select
+                    label="Algoritmo"
+                    value={formData.algorithm}
+                    onChange={(value) => updateField('algorithm', value)}
+                    options={[
+                        { value: 'SHA1', label: 'SHA1' },
+                        { value: 'SHA256', label: 'SHA256' },
+                        { value: 'SHA512', label: 'SHA512' },
+                    ]}
+                />
+
+                <Select
+                    label="Dígitos"
+                    value={formData.digits}
+                    onChange={(value) => updateField('digits', value)}
+                    options={[
+                        { value: '6', label: '6' },
+                        { value: '7', label: '7' },
+                        { value: '8', label: '8' },
+                    ]}
+                />
             </div>
 
             <div className="form-row">
-                <div className="form-group">
-                    <label htmlFor="algorithm">Algoritmo</label>
-                    <select id="algorithm" name="algorithm" value={formData.algorithm} onChange={handleChange}>
-                        <option value="SHA1">SHA1</option>
-                        <option value="SHA256">SHA256</option>
-                        <option value="SHA512">SHA512</option>
-                    </select>
-                </div>
+                <Select
+                    label="Período (segundos)"
+                    value={formData.period}
+                    onChange={(value) => updateField('period', value)}
+                    options={[
+                        { value: '30', label: '30' },
+                        { value: '60', label: '60' },
+                    ]}
+                />
 
-                <div className="form-group">
-                    <label htmlFor="digits">Dígitos</label>
-                    <select id="digits" name="digits" value={formData.digits} onChange={handleChange}>
-                        <option value="6">6</option>
-                        <option value="7">7</option>
-                        <option value="8">8</option>
-                    </select>
-                </div>
+                <Select
+                    label="Codificação"
+                    value={formData.encoding}
+                    onChange={(value) => updateField('encoding', value)}
+                    options={[
+                        { value: 'base32', label: 'Base32' },
+                        { value: 'base64', label: 'Base64' },
+                        { value: 'ascii', label: 'ASCII' },
+                    ]}
+                />
             </div>
 
-            <div className="form-row">
-                <div className="form-group">
-                    <label htmlFor="period">Período (segundos)</label>
-                    <select id="period" name="period" value={formData.period} onChange={handleChange}>
-                        <option value="30">30</option>
-                        <option value="60">60</option>
-                    </select>
-                </div>
-
-                <div className="form-group">
-                    <label htmlFor="encoding">Codificação</label>
-                    <select id="encoding" name="encoding" value={formData.encoding} onChange={handleChange}>
-                        <option value="base32">Base32</option>
-                        <option value="base64">Base64</option>
-                        <option value="ascii">ASCII</option>
-                    </select>
-                </div>
-            </div>
-
-            <button type="submit" className="btn btn-primary btn-block">
+            <Button type="submit" variant="primary" className="full-width">
                 + Adicionar Conta
-            </button>
+            </Button>
         </form>
     );
 };

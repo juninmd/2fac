@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { Badge, Button, EmptyState, SearchField, Skeleton, Tooltip, useToast } from '@juninmd/sonido';
 import { reorder } from '../utils/arrayUtils';
 import { TwoFAItem, AppSettings } from '../types';
 import ItemList from './ItemList';
@@ -15,6 +16,7 @@ import './App.css';
 const ACTIVITY_EVENTS = ['mousemove', 'keydown', 'click', 'wheel', 'touchstart', 'pointerdown'] as const;
 
 const App: React.FC = () => {
+    const toast = useToast();
     const [items, setItems] = useState<TwoFAItem[]>([]);
     const [filteredItems, setFilteredItems] = useState<TwoFAItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -63,7 +65,7 @@ const App: React.FC = () => {
             if (e.ctrlKey || e.metaKey) {
                 if (e.key === 'f') {
                     e.preventDefault();
-                    document.querySelector<HTMLInputElement>('.search-bar')?.focus();
+                    document.querySelector<HTMLInputElement>('.app-search input')?.focus();
                 } else if (e.key === 'l') {
                     e.preventDefault();
                     setIsLocked(true);
@@ -116,9 +118,13 @@ const App: React.FC = () => {
         const loaded = await window.electron.getSettings();
         setSettings(loaded);
 
-        // Apply Theme and Accent Color
+        // Apply Theme and Accent Color. Sonido reads data-theme; the palette
+        // below is what the --sn-* bridge maps its tokens onto.
         const rootStyle = document.documentElement.style;
-        if (loaded.theme === 'light') {
+        const theme = loaded.theme === 'light' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = theme;
+        if (theme === 'light') {
             rootStyle.setProperty('--bg-dark', '#f0f2f5');
             rootStyle.setProperty('--bg-card', '#ffffff');
             rootStyle.setProperty('--bg-hover', '#e4e6eb');
@@ -290,11 +296,11 @@ const App: React.FC = () => {
         try {
             const result = await window.electron.export2FA();
             if (result.success) {
-                alert(`Backup exportado com sucesso: ${result.path}`);
+                toast({ title: 'Backup exportado', description: result.path, tone: 'success' });
             }
         } catch (error) {
             console.error('Failed to export:', error);
-            alert('Erro ao exportar');
+            toast({ title: 'Erro ao exportar', tone: 'danger' });
         }
     };
 
@@ -305,13 +311,13 @@ const App: React.FC = () => {
         try {
             const result = await window.electron.export2FAEncrypted(password);
             if (result.success) {
-                alert(`Backup criptografado exportado com sucesso: ${result.path}`);
+                toast({ title: 'Backup criptografado exportado', description: result.path, tone: 'success' });
             } else if (result.error) {
-                alert(`Erro ao exportar: ${result.error}`);
+                toast({ title: 'Erro ao exportar', description: result.error, tone: 'danger' });
             }
         } catch (error) {
             console.error('Failed to export encrypted:', error);
-            alert('Erro ao exportar');
+            toast({ title: 'Erro ao exportar', tone: 'danger' });
         }
     };
 
@@ -320,11 +326,11 @@ const App: React.FC = () => {
             const result = await window.electron.import2FA();
             if (result.success) {
                 await loadItems();
-                alert(`${result.count} itens importados com sucesso!`);
+                toast({ title: `${result.count} itens importados com sucesso!`, tone: 'success' });
             }
         } catch (error) {
             console.error('Failed to import:', error);
-            alert('Erro ao importar');
+            toast({ title: 'Erro ao importar', tone: 'danger' });
         }
     };
 
@@ -336,13 +342,13 @@ const App: React.FC = () => {
             const result = await window.electron.import2FAEncrypted(password);
             if (result.success) {
                 await loadItems();
-                alert(`${result.count} itens importados com sucesso!`);
+                toast({ title: `${result.count} itens importados com sucesso!`, tone: 'success' });
             } else if (result.error) {
-                alert(`Erro ao importar: ${result.error}`);
+                toast({ title: 'Erro ao importar', description: result.error, tone: 'danger' });
             }
         } catch (error) {
             console.error('Failed to import encrypted:', error);
-            alert('Erro ao importar');
+            toast({ title: 'Erro ao importar', tone: 'danger' });
         }
     };
 
@@ -351,13 +357,13 @@ const App: React.FC = () => {
             const result = await window.electron.importAuthy();
             if (result.success) {
                 await loadItems();
-                alert(`${result.count} itens Authy importados com sucesso!`);
+                toast({ title: `${result.count} itens Authy importados com sucesso!`, tone: 'success' });
             } else {
-                alert(`Erro ao importar: ${result.error || 'Arquivo inválido'}`);
+                toast({ title: 'Erro ao importar', description: result.error || 'Arquivo inválido', tone: 'danger' });
             }
         } catch (error) {
             console.error('Failed to import from Authy:', error);
-            alert('Erro ao importar Authy');
+            toast({ title: 'Erro ao importar Authy', tone: 'danger' });
         }
     };
 
@@ -366,13 +372,13 @@ const App: React.FC = () => {
             const result = await window.electron.importGoogleAuth();
             if (result.success) {
                 await loadItems();
-                alert(`${result.count} contas do Google Authenticator importadas com sucesso!`);
+                toast({ title: `${result.count} contas do Google Authenticator importadas com sucesso!`, tone: 'success' });
             } else {
-                alert(`Erro ao importar: ${result.error || 'Arquivo inválido'}`);
+                toast({ title: 'Erro ao importar', description: result.error || 'Arquivo inválido', tone: 'danger' });
             }
         } catch (error) {
             console.error('Failed to import from Google Authenticator:', error);
-            alert('Erro ao importar Google Authenticator');
+            toast({ title: 'Erro ao importar Google Authenticator', tone: 'danger' });
         }
     };
 
@@ -386,48 +392,52 @@ const App: React.FC = () => {
                 <div className="header-left">
                     <h1>
                         <span className="app-logo-icon">🔐</span> 2FAC
+                        <Badge appearance="count" tone="neutral" aria-label={`${items.length} contas`}>{items.length}</Badge>
                     </h1>
                 </div>
 
                 <div className="header-center">
-                    <input
-                        type="text"
-                        className="search-bar"
-                        placeholder="Buscar contas..."
+                    <SearchField
+                        className="app-search"
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={setSearchQuery}
+                        label="Buscar contas"
+                        placeholder="Buscar contas..."
+                        shortcutHint
                     />
                 </div>
 
                 <div className="header-right">
-                    <button
-                        className="btn-icon"
-                        onClick={() => setSidebarMode(sidebarMode === 'add' ? 'none' : 'add')}
-                        title="Adicionar Conta"
-                    >
-                        +
-                    </button>
-                    <button
-                        className="btn-icon"
-                        onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-                        title={viewMode === 'grid' ? 'Ver em Lista' : 'Ver em Grade'}
-                    >
-                        {viewMode === 'grid' ? '☰' : '▦'}
-                    </button>
-                    <button
-                        className="btn-icon"
-                        onClick={() => setShowSettings(true)}
-                        title="Configurações"
-                    >
-                        ⚙
-                    </button>
-                    <button
-                        className="btn-icon"
-                        onClick={() => setIsLocked(true)}
-                        title="Bloquear App"
-                    >
-                        🔒
-                    </button>
+                    <Tooltip content="Adicionar conta">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Adicionar Conta"
+                            onClick={() => setSidebarMode(sidebarMode === 'add' ? 'none' : 'add')}
+                        >
+                            +
+                        </Button>
+                    </Tooltip>
+                    <Tooltip content={viewMode === 'grid' ? 'Ver em lista' : 'Ver em grade'}>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={viewMode === 'grid' ? 'Ver em Lista' : 'Ver em Grade'}
+                            onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                        >
+                            {viewMode === 'grid' ? '☰' : '▦'}
+                        </Button>
+                    </Tooltip>
+                    <Tooltip content="Configurações">
+                        <Button variant="ghost" size="icon" aria-label="Configurações" onClick={() => setShowSettings(true)}>
+                            ⚙
+                        </Button>
+                    </Tooltip>
+                    <Tooltip content="Bloquear app">
+                        <Button variant="ghost" size="icon" aria-label="Bloquear App" onClick={() => setIsLocked(true)}>
+                            🔒
+                        </Button>
+                    </Tooltip>
                 </div>
             </header>
 
@@ -484,9 +494,11 @@ const App: React.FC = () => {
                                     maskSecrets={settings?.maskSecrets ?? true}
                                 />
                             ) : (
-                                <div className="empty-state">
-                                    <p>Selecione uma conta</p>
-                                </div>
+                                <EmptyState
+                                    icon="⌨️"
+                                    title="Selecione uma conta"
+                                    description="Escolha uma conta na lista ao lado para ver o código."
+                                />
                             )}
                         </div>
                     </div>
@@ -504,18 +516,27 @@ const App: React.FC = () => {
                                 itemsCount={items.length}
                             />
                         ) : loading ? (
-                            <div className="loading">Carregando...</div>
+                            <div className="loading">
+                                <Skeleton rows={5} media label="Carregando contas" />
+                            </div>
                         ) : items.length === 0 ? (
-                            <div className="empty-state">
-                                <p>Nenhum item 2FA adicionado ainda</p>
-                                <button className="btn btn-primary" onClick={() => setSidebarMode('add')}>
-                                    + Adicionar primeira conta
-                                </button>
-                            </div>
+                            <EmptyState
+                                icon="🔐"
+                                title="Nenhum item 2FA adicionado ainda"
+                                description="Suas contas ficam só neste computador, cifradas em repouso."
+                                action={
+                                    <Button onClick={() => setSidebarMode('add')}>
+                                        + Adicionar primeira conta
+                                    </Button>
+                                }
+                                titleAs="h2"
+                            />
                         ) : filteredItems.length === 0 ? (
-                            <div className="empty-state">
-                                <p>Nenhuma conta encontrada para "{searchQuery}"</p>
-                            </div>
+                            <EmptyState
+                                icon="🔍"
+                                title={`Nenhuma conta encontrada para "${searchQuery}"`}
+                                description="Tente outro emissor ou nome de conta."
+                            />
                         ) : (
                             <DndContext
                                 sensors={sensors}
